@@ -1,0 +1,6 @@
+../Src/terminal.c:11:6:clear_terminal	8	static
+../Src/terminal.c:16:6:insert_new_line	8	static
+../Src/terminal.c:21:6:print_arrow	8	static
+../Src/terminal.c:26:6:set_terminal_text_color	16	static
+../Src/terminal.c:61:6:reset_terminal_text_color	8	static
+../Src/terminal.c:66:5:read_terminal_line	24	static

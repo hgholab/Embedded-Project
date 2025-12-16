@@ -1,0 +1,6 @@
+../Src/clock.c:67:6:clock_init	1
+../Src/clock.c:91:13:clock_enable_HSE	2
+../Src/clock.c:110:13:clock_configure_flash_wait_states	1
+../Src/clock.c:132:13:clock_configure_prescalers	1
+../Src/clock.c:166:13:clock_configure_PLL	3
+../Src/clock.c:215:13:clock_switch_SYSCLK_to_PLL	2
