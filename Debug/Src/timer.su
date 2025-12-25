@@ -1,0 +1,4 @@
+C:/Users/hgholab/OneDrive/Documents/Embedded Systems/Modules/Final_Project/chip_headers/CMSIS/Include/core_cm4.h:1722:22:__NVIC_DisableIRQ	16	static,ignoring_inline_asm
+C:/Users/hgholab/OneDrive/Documents/Embedded Systems/Modules/Final_Project/chip_headers/CMSIS/Include/core_cm4.h:1814:22:__NVIC_SetPriority	16	static
+../Src/timer.c:16:6:TIM3_IRQHandler	8	static
+../Src/timer.c:37:6:tim3_init	32	static

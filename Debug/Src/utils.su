@@ -1,1 +1,4 @@
-../Src/utils.c:3:10:arr_to_num	40	static
+../Src/utils.c:6:10:str_to_uint32	32	static
+../Src/utils.c:29:9:str_to_int32	16	static
+../Src/utils.c:43:6:str_to_lower	24	static
+../Src/utils.c:57:7:str_to_float	56	static

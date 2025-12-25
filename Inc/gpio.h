@@ -3,7 +3,6 @@
 
 #include <stdbool.h>
 
-
 typedef enum
 {
     GPIO_PORT_A = 0,
@@ -33,7 +32,6 @@ typedef enum
     GPIO_PIN_14,
     GPIO_PIN_15
 } GPIO_pin_t;
-
 
 void gpio_init(void);
 void gpio_set_pin(GPIO_port_t port, GPIO_pin_t pin);

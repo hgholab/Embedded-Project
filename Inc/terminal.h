@@ -1,7 +1,8 @@
 #ifndef TERMINAL_H
 #define TERMINAL_H
 
-typedef enum {
+typedef enum
+{
     TERM_COLOR_DEFAULT = 0,
     TERM_COLOR_BLACK,
     TERM_COLOR_RED,
@@ -13,11 +14,10 @@ typedef enum {
     TERM_COLOR_WHITE
 } Terminal_color_t;
 
-void clear_terminal(void);
-void insert_new_line(void);
-void print_arrow(void);
-void set_terminal_text_color(Terminal_color_t color);
-void reset_terminal_text_color(void);
-int read_terminal_line(char *dest, int max_length);
+void terminal_clear(void);
+void terminal_insert_new_line(void);
+void terminal_print_arrow(void);
+void terminal_set_text_color(Terminal_color_t color);
+void terminal_reset_text_color(void);
 
 #endif

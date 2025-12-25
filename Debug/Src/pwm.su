@@ -1,4 +1,4 @@
-../Src/pwm.c:33:6:pwm_init	32	static
-../Src/pwm.c:87:6:pwm_set_duty	24	static
-../Src/pwm.c:97:6:pwm_disable	4	static
-../Src/pwm.c:102:6:pwm_enable	4	static
+../Src/pwm.c:30:6:pwm_init	32	static
+../Src/pwm.c:84:6:pwm_set_duty	24	static
+../Src/pwm.c:94:6:pwm_disable	4	static
+../Src/pwm.c:99:6:pwm_enable	4	static

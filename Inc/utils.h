@@ -3,10 +3,13 @@
 
 #include <stdint.h>
 
+#define CLAMP(x, min, max) (((x) < (min)) ? (min) : (((x) > (max)) ? (max) : (x)))
+#define ARRAY_LEN(a) (sizeof(a) / sizeof((a)[0]))
 
-#define CLAMP(x,min,max)           (((x)<(min))?(min):(((x)>(max))?(max):(x)))
+uint32_t str_to_uint32(const char *str);
+int32_t str_to_int32(const char *str);
+float str_to_float(const char *str);
 
-
-uint32_t arr_to_num(int n, char arr[n], int min, int max);
+void str_to_lower(char *str);
 
 #endif

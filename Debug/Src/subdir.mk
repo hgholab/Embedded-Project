@@ -19,6 +19,7 @@ C_SRCS += \
 ../Src/sysmem.c \
 ../Src/systick.c \
 ../Src/terminal.c \
+../Src/timer.c \
 ../Src/uart.c \
 ../Src/utils.c 
 
@@ -37,6 +38,7 @@ OBJS += \
 ./Src/sysmem.o \
 ./Src/systick.o \
 ./Src/terminal.o \
+./Src/timer.o \
 ./Src/uart.o \
 ./Src/utils.o 
 
@@ -55,6 +57,7 @@ C_DEPS += \
 ./Src/sysmem.d \
 ./Src/systick.d \
 ./Src/terminal.d \
+./Src/timer.d \
 ./Src/uart.d \
 ./Src/utils.d 
 
@@ -66,7 +69,7 @@ Src/%.o Src/%.su Src/%.cyclo: ../Src/%.c Src/subdir.mk
 clean: clean-Src
 
 clean-Src:
-	-$(RM) ./Src/cli.cyclo ./Src/cli.d ./Src/cli.o ./Src/cli.su ./Src/clock.cyclo ./Src/clock.d ./Src/clock.o ./Src/clock.su ./Src/controller.cyclo ./Src/controller.d ./Src/controller.o ./Src/controller.su ./Src/converter.cyclo ./Src/converter.d ./Src/converter.o ./Src/converter.su ./Src/fpu.cyclo ./Src/fpu.d ./Src/fpu.o ./Src/fpu.su ./Src/gpio.cyclo ./Src/gpio.d ./Src/gpio.o ./Src/gpio.su ./Src/interrupts.cyclo ./Src/interrupts.d ./Src/interrupts.o ./Src/interrupts.su ./Src/main.cyclo ./Src/main.d ./Src/main.o ./Src/main.su ./Src/pwm.cyclo ./Src/pwm.d ./Src/pwm.o ./Src/pwm.su ./Src/retarget.cyclo ./Src/retarget.d ./Src/retarget.o ./Src/retarget.su ./Src/syscalls.cyclo ./Src/syscalls.d ./Src/syscalls.o ./Src/syscalls.su ./Src/sysmem.cyclo ./Src/sysmem.d ./Src/sysmem.o ./Src/sysmem.su ./Src/systick.cyclo ./Src/systick.d ./Src/systick.o ./Src/systick.su ./Src/terminal.cyclo ./Src/terminal.d ./Src/terminal.o ./Src/terminal.su ./Src/uart.cyclo ./Src/uart.d ./Src/uart.o ./Src/uart.su ./Src/utils.cyclo ./Src/utils.d ./Src/utils.o ./Src/utils.su
+	-$(RM) ./Src/cli.cyclo ./Src/cli.d ./Src/cli.o ./Src/cli.su ./Src/clock.cyclo ./Src/clock.d ./Src/clock.o ./Src/clock.su ./Src/controller.cyclo ./Src/controller.d ./Src/controller.o ./Src/controller.su ./Src/converter.cyclo ./Src/converter.d ./Src/converter.o ./Src/converter.su ./Src/fpu.cyclo ./Src/fpu.d ./Src/fpu.o ./Src/fpu.su ./Src/gpio.cyclo ./Src/gpio.d ./Src/gpio.o ./Src/gpio.su ./Src/interrupts.cyclo ./Src/interrupts.d ./Src/interrupts.o ./Src/interrupts.su ./Src/main.cyclo ./Src/main.d ./Src/main.o ./Src/main.su ./Src/pwm.cyclo ./Src/pwm.d ./Src/pwm.o ./Src/pwm.su ./Src/retarget.cyclo ./Src/retarget.d ./Src/retarget.o ./Src/retarget.su ./Src/syscalls.cyclo ./Src/syscalls.d ./Src/syscalls.o ./Src/syscalls.su ./Src/sysmem.cyclo ./Src/sysmem.d ./Src/sysmem.o ./Src/sysmem.su ./Src/systick.cyclo ./Src/systick.d ./Src/systick.o ./Src/systick.su ./Src/terminal.cyclo ./Src/terminal.d ./Src/terminal.o ./Src/terminal.su ./Src/timer.cyclo ./Src/timer.d ./Src/timer.o ./Src/timer.su ./Src/uart.cyclo ./Src/uart.d ./Src/uart.o ./Src/uart.su ./Src/utils.cyclo ./Src/utils.d ./Src/utils.o ./Src/utils.su
 
 .PHONY: clean-Src
 

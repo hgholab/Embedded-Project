@@ -35,7 +35,7 @@
 #define PLLQ_VALUE        4UL
 
 
-static const uint32_t flash_acr_latency_ws[] =
+static uint32_t const flash_acr_latency_ws[] =
 {
     FLASH_ACR_LATENCY_0WS,
     FLASH_ACR_LATENCY_1WS,
@@ -171,33 +171,33 @@ static void clock_configure_PLL(void)
     while (RCC->CR & RCC_CR_PLLRDY) ;
 
     // Start from current value to preserve reserved bits.
-    uint32_t pllcfgr = RCC->PLLCFGR;
+    uint32_t pll_cfgr = RCC->PLLCFGR;
 
-    pllcfgr &= ~(RCC_PLLCFGR_PLLM_Msk |
+    pll_cfgr &= ~(RCC_PLLCFGR_PLLM_Msk |
                  RCC_PLLCFGR_PLLN_Msk |
                  RCC_PLLCFGR_PLLP_Msk |
                  RCC_PLLCFGR_PLLQ_Msk |
                  RCC_PLLCFGR_PLLSRC_Msk);
 
     // Select HSE as PLL source.
-    pllcfgr |= RCC_PLLCFGR_PLLSRC_HSE;
+    pll_cfgr |= RCC_PLLCFGR_PLLSRC_HSE;
 
-    pllcfgr |= (PLLM_VALUE << 0);
+    pll_cfgr |= (PLLM_VALUE << 0);
 
-    pllcfgr |= (PLLN_VALUE << 6);
+    pll_cfgr |= (PLLN_VALUE << 6);
 
     // Set PLLP (bits 17:16), encoded as (PLLP/2 - 1)
-    pllcfgr |= ((PLLP_VALUE / 2U - 1U) << 16);
+    pll_cfgr |= ((PLLP_VALUE / 2U - 1U) << 16);
 
     /*
      * Set PLLQ (bits 27:24)
      * In this project, we do not use USB, RNG, and SDIO. So we only need to
      * make sure that PLLQ is in the acceptable range.
      */
-    pllcfgr |= (PLLQ_VALUE << 24);
+    pll_cfgr |= (PLLQ_VALUE << 24);
 
     // Write back the configuration (reserved bits preserved).
-    RCC->PLLCFGR = pllcfgr;
+    RCC->PLLCFGR = pll_cfgr;
 
     // Enable PLL.
     RCC->CR |= RCC_CR_PLLON;

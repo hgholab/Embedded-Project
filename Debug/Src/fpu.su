@@ -1,1 +1,1 @@
-../Src/fpu.c:20:6:fpu_enable	4	static,ignoring_inline_asm
+../Src/fpu.c:19:6:fpu_enable	4	static,ignoring_inline_asm

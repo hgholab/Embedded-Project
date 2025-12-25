@@ -12,6 +12,7 @@
 "./Src/sysmem.o"
 "./Src/systick.o"
 "./Src/terminal.o"
+"./Src/timer.o"
 "./Src/uart.o"
 "./Src/utils.o"
 "./Startup/startup_stm32f411retx.o"

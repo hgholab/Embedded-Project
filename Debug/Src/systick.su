@@ -1,6 +1,8 @@
-../Src/systick.c:38:6:SysTick_Handler	4	static
-../Src/systick.c:44:6:systick_init	24	static
-../Src/systick.c:73:6:systick_delay_ms	24	static
-../Src/systick.c:81:10:systick_get_ticks	4	static
-../Src/systick.c:86:6:systick_clear_ticks	4	static
-../Src/systick.c:92:13:systick_set_freq	16	static
+../Src/systick.c:35:6:SysTick_Handler	8	static
+../Src/systick.c:48:6:systick_init	24	static
+../Src/systick.c:76:6:systick_disable_interrupt	4	static
+../Src/systick.c:81:6:systick_enable_interrupt	4	static
+../Src/systick.c:86:6:systick_delay_ms	24	static
+../Src/systick.c:95:10:systick_get_ticks	4	static
+../Src/systick.c:100:6:systick_clear_ticks	4	static
+../Src/systick.c:105:13:systick_set_freq	16	static

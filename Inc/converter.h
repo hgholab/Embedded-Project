@@ -1,17 +1,17 @@
 #ifndef CONVERTER_H
 #define CONVERTER_H
 
-#define N_STATES         6
-#define N_INPUTS         1
-#define N_OUTPUTS        1
+#define STATES_NUM 6
+#define INPUTS_NUM 1
+#define OUTPUTS_NUM 1
 
-typedef struct
-{
-    float x[N_STATES][1];
-} Converter_model_t;
+typedef struct converter_model *converter;
 
-void init_converter_model(Converter_model_t *model);
-void converter_model_step(Converter_model_t *model, const float u[N_INPUTS][1],
-    float y[N_OUTPUTS][1]);
+extern struct converter_model plant;
+extern float u[][1];
+extern float y[][1];
+
+void converter_init(converter model);
+void converter_update(converter model, const float u[INPUTS_NUM][1], float y[OUTPUTS_NUM][1]);
 
 #endif

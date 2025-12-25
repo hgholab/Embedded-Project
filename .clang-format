@@ -1,0 +1,40 @@
+BasedOnStyle: LLVM
+Language: C
+
+IndentWidth: 8
+TabWidth: 4
+UseTab: Never
+ContinuationIndentWidth: 8
+ColumnLimit: 100
+
+IndentCaseLabels: false
+SpaceBeforeParens: ControlStatements
+
+PointerAlignment: Right
+ReferenceAlignment: Right
+
+AlignAfterOpenBracket: true
+AlignOperands: Align
+AlignTrailingComments: Always
+
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortFunctionsOnASingleLine: None
+AllowShortBlocksOnASingleLine: Never
+
+BreakBeforeBraces: Allman
+BreakBeforeBinaryOperators: None
+BreakBeforeTernaryOperators: false
+
+ReflowComments: Always
+SpacesInParentheses: false
+MaxEmptyLinesToKeep: 1
+
+KeepEmptyLines:
+  AtEndOfFile: false
+  AtStartOfBlock: false
+  AtStartOfFile: false
+
+SortIncludes:
+  Enabled: true
+  IgnoreCase: true
+  IgnoreExtension: true 

@@ -1,1 +1,4 @@
-../Src/utils.c:3:10:arr_to_num	3
+../Src/utils.c:6:10:str_to_uint32	4
+../Src/utils.c:29:9:str_to_int32	3
+../Src/utils.c:43:6:str_to_lower	3
+../Src/utils.c:57:7:str_to_float	7

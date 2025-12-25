@@ -1,4 +1,6 @@
-../Src/uart.c:18:6:uart2_init	16	static
-../Src/uart.c:36:6:uart2_write_char_blocking	16	static
-../Src/uart.c:45:9:uart2_getchar_blocking	4	static
-../Src/uart.c:59:17:uart2_calc_brr	32	static
+C:/Users/hgholab/OneDrive/Documents/Embedded Systems/Modules/Final_Project/chip_headers/CMSIS/Include/core_cm4.h:1684:22:__NVIC_EnableIRQ	16	static,ignoring_inline_asm
+C:/Users/hgholab/OneDrive/Documents/Embedded Systems/Modules/Final_Project/chip_headers/CMSIS/Include/core_cm4.h:1814:22:__NVIC_SetPriority	16	static
+../Src/uart.c:15:6:USART2_IRQHandler	4	static
+../Src/uart.c:25:6:uart2_init	16	static
+../Src/uart.c:50:6:uart2_write_char_blocking	16	static
+../Src/uart.c:64:17:uart2_calc_brr	32	static
