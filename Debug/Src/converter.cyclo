@@ -1,2 +1,2 @@
-../Src/converter.c:42:6:converter_init	2
-../Src/converter.c:48:6:converter_update	8
+../Src/converter.c:31:6:converter_init	2
+../Src/converter.c:37:6:converter_update	8

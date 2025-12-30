@@ -18,10 +18,13 @@
 
 int main(void)
 {
+        // Initialization phase
         fpu_enable();
         clock_init();
         systick_init(SYSTICK_PROCESSOR_CLOCK, false);
-        tim3_init(4UL);
+        tim2_init(500UL);
+        pwm_tim2_init();
+        tim3_init(50UL);
         gpio_init();
         uart2_init();
 
@@ -29,17 +32,18 @@ int main(void)
         setbuf(stdout, NULL);
         terminal_clear();
 
+        // Variables plant and pid are defined in converter.c and controller.c respectively.
         converter_init(&plant);
         pid_init(&pid,
-                 0.000362f,    // Kp
-                 36.281488f,   // Ki
-                 0.0f,         // Kd
-                 0.000020f,    // Ts
-                 -50.000000f,  // int_out_min (controller integral term minimum value)
-                 50.000000f,   // int_out_max (controller integral term maximum value)
-                 -100.000000f, // controller_out_min (controller output minimum value)
-                 100.000000f,  // controller_out_max (controller output maximum value)
-                 10.0f);       // reference
+                 0.000362f,   // kp
+                 36.281488f,  // ki
+                 0.0f,        // kd
+                 0.000020f,   // Ts
+                 -50.000000f, // int_out_min (controller integral term minimum value)
+                 50.000000f,  // int_out_max (controller integral term maximum value)
+                 -60.000000f, // controller_out_min (controller output minimum value)
+                 60.000000f,  // controller_out_max (controller output maximum value)
+                 10.0f);      // reference
 
         cli_init();
 

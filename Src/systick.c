@@ -16,6 +16,7 @@
  *     The SysTick interrupt increments a tick counter at a
  *     fixed frequency, which can be used for timing and delays.
  */
+#include <stdio.h>
 
 #include "stm32f4xx.h"
 
@@ -24,24 +25,43 @@
 #include "clock.h"
 #include "controller.h"
 #include "converter.h"
+#include "terminal.h"
 
 // SysTick frequency in Hz
 #define SYSTICK_FREQUENCY 1000UL
 
-static volatile uint32_t systick_ticks = 0;
+// systick_ticks is incremented SYSTICK_FREQUENCY times every second in SysTick_Handler ISR.
+static volatile uint32_t systick_ticks      = 0;
+// output_line_counter counts the printed lines in terminal, so we clean it after 100 lines.
+static volatile uint8_t output_line_counter = 0;
 
 static void systick_set_freq(uint32_t systick_clock, uint32_t systick_freq);
 
+/*
+ * SysTick interrupt is used to print the output voltage of the converter when stream is on.
+ * Note: SysTick interrupt priority is the lowest on Nucleo F411RE by default. That is what we want
+ * because printing the output voltage value is not as important as mode change by button handled by
+ * timer 3 or updating the control loop and the converter state vector by timer 2.
+ */
 void SysTick_Handler(void)
 {
         systick_ticks++;
 
-        // Every 5ms, update the control loop and converter state variables.
-        if (systick_ticks == 5UL)
+        // Every 500ms, print the output voltage of the converter.
+        if (systick_ticks == 500UL)
         {
-                u[0][0] = pid_update(&pid, y[0][0]);
-                converter_update(&plant, u, y);
+                printf("Output voltage: %05.2f V", y[0][0]);
                 systick_clear_ticks();
+
+                if (++output_line_counter == 100)
+                {
+                        output_line_counter = 0;
+                        terminal_clear();
+                }
+                else
+                {
+                        terminal_insert_new_line();
+                }
         }
 }
 
@@ -111,7 +131,7 @@ static void systick_set_freq(uint32_t systick_clock, uint32_t systick_freq)
         SysTick->LOAD = systick_clock / systick_freq - 1;
 
         // Clear current value so it starts counting from LOAD immediately.
-        SysTick->VAL = 0;
+        SysTick->VAL  = 0;
 
         // Enable SysTick timer.
         SysTick->CTRL |= SysTick_CTRL_ENABLE_Msk;

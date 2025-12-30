@@ -1,21 +1,22 @@
-C:/Users/hgholab/OneDrive/Documents/Embedded Systems/Modules/Final_Project/chip_headers/CMSIS/Include/core_cm4.h:1684:22:__NVIC_EnableIRQ	16	static,ignoring_inline_asm
-C:/Users/hgholab/OneDrive/Documents/Embedded Systems/Modules/Final_Project/chip_headers/CMSIS/Include/core_cm4.h:1722:22:__NVIC_DisableIRQ	16	static,ignoring_inline_asm
-../Src/cli.c:117:6:cli_init	8	static
-../Src/cli.c:125:12:cli_execute_command	40	static
-../Src/cli.c:176:12:cli_show_help_and_notes_handler	24	static
-../Src/cli.c:185:12:cli_show_status_handler	48	static
-../Src/cli.c:200:12:cli_set_mode_handler	32	static
-../Src/cli.c:334:12:cli_stream_handler	24	static
-../Src/cli.c:341:12:cli_set_kp_handler	24	static
-../Src/cli.c:367:12:cli_set_ki_handler	24	static
-../Src/cli.c:393:12:cli_set_kd_handler	24	static
-../Src/cli.c:419:12:cli_set_ref_handler	24	static
-../Src/cli.c:445:12:cli_exit_command_handler	40	static
-../Src/cli.c:468:13:cli_set_mode	16	static
-../Src/cli.c:473:15:cli_get_mode	4	static
-../Src/cli.c:488:18:cli_tokenize_command	32	static
-../Src/cli.c:519:6:cli_process_rx_byte	32	static
-../Src/cli.c:561:6:cli_show_startup_menu	32	static
-../Src/cli.c:608:6:cli_show_system_status	32	static
-../Src/cli.c:631:6:cli_show_config_menu	8	static
-../Src/cli.c:651:13:cli_show_help_and_notes	8	static
+C:/Users/hgholab/OneDrive/Source Code/Embedded Systems/Modules/Final_Project/chip_headers/CMSIS/Include/core_cm4.h:1684:22:__NVIC_EnableIRQ	16	static,ignoring_inline_asm
+C:/Users/hgholab/OneDrive/Source Code/Embedded Systems/Modules/Final_Project/chip_headers/CMSIS/Include/core_cm4.h:1722:22:__NVIC_DisableIRQ	16	static,ignoring_inline_asm
+../Src/cli.c:118:6:cli_init	8	static
+../Src/cli.c:126:12:cli_execute_command	40	static
+../Src/cli.c:177:12:cli_show_help_and_notes_handler	24	static
+../Src/cli.c:186:12:cli_show_status_handler	48	static
+../Src/cli.c:201:12:cli_set_mode_handler	32	static
+../Src/cli.c:316:12:cli_stream_handler	24	static
+../Src/cli.c:323:12:cli_set_kp_handler	24	static
+../Src/cli.c:349:12:cli_set_ki_handler	24	static
+../Src/cli.c:375:12:cli_set_kd_handler	24	static
+../Src/cli.c:401:12:cli_set_ref_handler	40	static
+../Src/cli.c:446:12:cli_exit_command_handler	40	static
+../Src/cli.c:469:13:cli_set_mode	16	static
+../Src/cli.c:477:15:cli_get_mode	4	static
+../Src/cli.c:482:13:cli_configure_mode_LEDs	16	static
+../Src/cli.c:515:18:cli_tokenize_command	32	static
+../Src/cli.c:546:6:cli_process_rx_byte	32	static
+../Src/cli.c:588:6:cli_show_startup_menu	32	static
+../Src/cli.c:638:6:cli_show_system_status	32	static
+../Src/cli.c:661:6:cli_show_config_menu	8	static
+../Src/cli.c:681:13:cli_show_help_and_notes	8	static

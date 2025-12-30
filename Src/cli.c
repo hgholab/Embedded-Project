@@ -36,11 +36,11 @@
 #include "uart.h"
 #include "utils.h"
 
-#define SEPERATOR_1 "==============================================="
-#define SEPERATOR_2 "  -----------------------------------------------"
+#define SEPERATOR_1    "==============================================="
+#define SEPERATOR_2    "  -----------------------------------------------"
 #define CLI_BUFFER_LEN 32
-#define MAX_ARG_NUM 2
-#define MODES_NUM 3
+#define MAX_ARG_NUM    2
+#define MODES_NUM      3
 
 typedef enum
 {
@@ -84,7 +84,7 @@ static uint8_t cli_buffer[CLI_BUFFER_LEN];
  * use the PID controller output to make the PWM signal for the green LEDs.
  */
 static const char *modes[MODES_NUM] = {"idle", "config", "mod"};
-static mode_t current_mode = IDLE;
+static mode_t current_mode          = IDLE;
 
 static int cli_show_help_and_notes_handler(command_t command);
 static int cli_execute_command(command_t command);
@@ -99,6 +99,7 @@ static int cli_set_ref_handler(command_t command);
 static int cli_exit_command_handler(command_t command);
 static void cli_set_mode(mode_t mode);
 static mode_t cli_get_mode(void);
+static void cli_configure_mode_LEDs(mode_t mode);
 static command_t cli_tokenize_command(uint8_t *cmd_str);
 void cli_show_startup_menu(void);
 void cli_show_system_status(mode_t mode, float kp, float ki, float kd, float reference);
@@ -119,7 +120,7 @@ void cli_init(void)
         cli_show_startup_menu();
 
         // Turn on blue LED to show that the mode is idle at startup.
-        gpio_set_pin(GPIO_PORT_B, GPIO_PIN_3);
+        cli_configure_mode_LEDs(IDLE);
 }
 
 static int cli_execute_command(command_t command)
@@ -184,10 +185,10 @@ static int cli_show_help_and_notes_handler(command_t command)
 
 static int cli_show_status_handler(command_t command)
 {
-        float kp = pid_get_kp(&pid);
-        float ki = pid_get_ki(&pid);
-        float kd = pid_get_kd(&pid);
-        float ref = pid_get_ref(&pid);
+        float kp    = pid_get_kp(&pid);
+        float ki    = pid_get_ki(&pid);
+        float kd    = pid_get_kd(&pid);
+        float ref   = pid_get_ref(&pid);
         mode_t mode = cli_get_mode();
 
         cli_show_system_status(mode, kp, ki, kd, ref);
@@ -228,10 +229,9 @@ static int cli_set_mode_handler(command_t command)
 
                                         /*
                                          * Stop updating the control loop, and converter state
-                                         * variables by disabling systick interrupt.
+                                         * variables by disabling timer 2 interrupt.
                                          */
-                                        systick_disable_interrupt();
-                                        systick_clear_ticks();
+                                        NVIC_DisableIRQ(TIM2_IRQn);
 
                                         // Clear PID controller integral accumulative term.
                                         pid_clear_integrator(&pid);
@@ -241,11 +241,6 @@ static int cli_set_mode_handler(command_t command)
                                         y[0][0] = 0.0f;
                                         // Set state vector to 0 by reseting converter state vector.
                                         converter_init(&plant);
-
-                                        // Turn on the mode corresponding LED.
-                                        gpio_set_pin(GPIO_PORT_B, GPIO_PIN_3);
-                                        gpio_clear_pin(GPIO_PORT_A, GPIO_PIN_8);
-                                        gpio_clear_pin(GPIO_PORT_B, GPIO_PIN_4);
 
                                         printf("In idle mode. The Converter is off.");
                                         terminal_insert_new_line();
@@ -267,12 +262,10 @@ static int cli_set_mode_handler(command_t command)
                                         cli_set_mode(CONFIG);
 
                                         /*
-                                         * Stop updating the control loop, and
-                                         * converter state variables by disabling
-                                         * systick interrupt.
+                                         * Stop updating the control loop, and converter state
+                                         * variables by disabling timer 2 interrupt.
                                          */
-                                        systick_disable_interrupt();
-                                        systick_clear_ticks();
+                                        NVIC_DisableIRQ(TIM2_IRQn);
 
                                         // Clear PID controller integral accumulative term.
                                         pid_clear_integrator(&pid);
@@ -282,11 +275,6 @@ static int cli_set_mode_handler(command_t command)
                                         y[0][0] = 0.0f;
                                         // Set state vector to 0 by reseting converter state vector.
                                         converter_init(&plant);
-
-                                        // Turn on the mode corresponding LED.
-                                        gpio_set_pin(GPIO_PORT_B, GPIO_PIN_4);
-                                        gpio_clear_pin(GPIO_PORT_A, GPIO_PIN_8);
-                                        gpio_clear_pin(GPIO_PORT_B, GPIO_PIN_3);
 
                                         terminal_set_text_color(TERM_COLOR_YELLOW);
                                         printf("In configuration mode. You can configure the "
@@ -305,16 +293,10 @@ static int cli_set_mode_handler(command_t command)
                                 {
                                         cli_set_mode(MOD);
                                         /*
-                                         * Start updating the control loop, and
-                                         * converter state variables by enabling
-                                         * systick interrupt.
+                                         * Start updating the control loop, and converter state
+                                         * variables by enabling timer 2 interrupt.
                                          */
-                                        systick_enable_interrupt();
-
-                                        // Turn on the mode corresponding LED.
-                                        gpio_set_pin(GPIO_PORT_A, GPIO_PIN_8);
-                                        gpio_clear_pin(GPIO_PORT_B, GPIO_PIN_4);
-                                        gpio_clear_pin(GPIO_PORT_B, GPIO_PIN_3);
+                                        NVIC_EnableIRQ(TIM2_IRQn);
 
                                         printf("In modulation mode. The converter is operating.");
                                         terminal_insert_new_line();
@@ -333,7 +315,7 @@ static int cli_set_mode_handler(command_t command)
 
 static int cli_stream_handler(command_t)
 {
-        NVIC_EnableIRQ(TIM3_IRQn);
+        systick_enable_interrupt();
         cli_stream_is_on = true;
         return 0;
 }
@@ -429,7 +411,26 @@ static int cli_set_ref_handler(command_t command)
 
         if (cli_get_mode() == CONFIG || cli_get_mode() == MOD)
         {
-                pid_set_ref(&pid, str_to_float(command.argv[1]));
+                float ref = str_to_float(command.argv[1]);
+
+                if (ref > REF_MAX)
+                {
+                        printf("The reference cannot be higher than %05.2f and is now %05.2f.",
+                               REF_MAX,
+                               REF_MAX);
+                        terminal_insert_new_line();
+                }
+                else if (ref < -1.0f * REF_MAX)
+                {
+                        printf("The reference cannot be lower than %05.2f and is now %05.2f.",
+                               -1.0f * REF_MAX,
+                               -1.0f * REF_MAX);
+                        terminal_insert_new_line();
+                }
+
+                // The reference value is then limited between -50 and 50.
+                ref = CLAMP(ref, -1.0f * REF_MAX, REF_MAX);
+                pid_set_ref(&pid, ref);
                 terminal_print_arrow();
                 return 0;
         }
@@ -468,11 +469,37 @@ static int cli_exit_command_handler(command_t command)
 static void cli_set_mode(mode_t mode)
 {
         current_mode = mode;
+
+        // Confgiure mode LEDs
+        cli_configure_mode_LEDs(mode);
 }
 
 static mode_t cli_get_mode(void)
 {
         return current_mode;
+}
+
+static void cli_configure_mode_LEDs(mode_t mode)
+{
+        switch (mode)
+        {
+        case IDLE:
+                gpio_set_pin(GPIO_PORT_B, GPIO_PIN_3);
+                gpio_clear_pin(GPIO_PORT_A, GPIO_PIN_8);
+                gpio_clear_pin(GPIO_PORT_B, GPIO_PIN_4);
+                break;
+        case CONFIG:
+                gpio_set_pin(GPIO_PORT_B, GPIO_PIN_4);
+                gpio_clear_pin(GPIO_PORT_A, GPIO_PIN_8);
+                gpio_clear_pin(GPIO_PORT_B, GPIO_PIN_3);
+                break;
+
+        case MOD:
+                gpio_set_pin(GPIO_PORT_A, GPIO_PIN_8);
+                gpio_clear_pin(GPIO_PORT_B, GPIO_PIN_4);
+                gpio_clear_pin(GPIO_PORT_B, GPIO_PIN_3);
+                break;
+        }
 }
 
 /* ==================== CLI Helper Functions ==================== */
@@ -524,7 +551,7 @@ void cli_process_rx_byte(uint8_t ch)
         {
                 if (cli_stream_is_on)
                 {
-                        NVIC_DisableIRQ(TIM3_IRQn);
+                        systick_disable_interrupt();
                         cli_stream_is_on = false;
                         terminal_insert_new_line();
                         terminal_print_arrow();
@@ -533,7 +560,7 @@ void cli_process_rx_byte(uint8_t ch)
                 {
                         terminal_insert_new_line();
                         cli_buffer[cmd_line_current_index] = '\0';
-                        command_t command = cli_tokenize_command(cli_buffer);
+                        command_t command                  = cli_tokenize_command(cli_buffer);
                         cli_execute_command(command);
                         cmd_line_current_index = 0;
                 }
@@ -592,7 +619,10 @@ void cli_show_startup_menu(void)
         terminal_insert_new_line();
         terminal_insert_new_line();
 
-        cli_show_system_status(current_mode, pid_get_kp(&pid), pid_get_ki(&pid), pid_get_kd(&pid),
+        cli_show_system_status(current_mode,
+                               pid_get_kp(&pid),
+                               pid_get_ki(&pid),
+                               pid_get_kd(&pid),
                                pid_get_ref(&pid));
 
         terminal_insert_new_line();
@@ -656,7 +686,7 @@ static void cli_show_help_and_notes(void)
         terminal_insert_new_line();
         printf("  help                  - Show this help menu");
         terminal_insert_new_line();
-        printf("  status                - Show current mode, kp, ki, kd, and reference");
+        printf("  status                - Show current mode, kp, ki, kd, and ref");
         terminal_insert_new_line();
         printf("  mode idle             - Switch to idle mode");
         terminal_insert_new_line();

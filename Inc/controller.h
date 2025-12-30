@@ -1,12 +1,21 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
+#define REF_MAX 50.0f
+
 typedef struct pid_controller *controller;
 
 extern struct pid_controller pid;
 
-void pid_init(controller pid, float kp, float ki, float kd, float Ts, float int_out_min,
-              float int_out_max, float controller_out_min, float controller_out_max,
+void pid_init(controller pid,
+              float kp,
+              float ki,
+              float kd,
+              float Ts,
+              float int_out_min,
+              float int_out_max,
+              float controller_out_min,
+              float controller_out_max,
               float reference);
 float pid_update(controller pid, float measurement);
 void pid_set_kp(controller pid, float kp);

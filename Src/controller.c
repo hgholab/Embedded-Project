@@ -19,21 +19,28 @@ struct pid_controller
 
 struct pid_controller pid;
 
-void pid_init(controller pid, float kp, float ki, float kd, float Ts, float int_out_min,
-              float int_out_max, float controller_out_min, float controller_out_max,
+void pid_init(controller pid,
+              float kp,
+              float ki,
+              float kd,
+              float Ts,
+              float int_out_min,
+              float int_out_max,
+              float controller_out_min,
+              float controller_out_max,
               float reference)
 {
-        pid->kp = kp;
-        pid->ki = ki;
-        pid->kd = kd;
-        pid->Ts = Ts; // Sampling time in seconds
-        pid->prev_error = 0.0f;
-        pid->integral = 0.0f; // Accumulated integral term
-        pid->int_out_min = int_out_min;
-        pid->int_out_max = int_out_max;
+        pid->kp                 = kp;
+        pid->ki                 = ki;
+        pid->kd                 = kd;
+        pid->Ts                 = Ts; // Sampling time in seconds
+        pid->prev_error         = 0.0f;
+        pid->integral           = 0.0f; // Accumulated integral term
+        pid->int_out_min        = int_out_min;
+        pid->int_out_max        = int_out_max;
         pid->controller_out_min = controller_out_min;
         pid->controller_out_max = controller_out_max;
-        pid->reference = reference;
+        pid->reference          = reference;
 }
 
 float pid_update(controller pid, float measurement)
@@ -54,7 +61,7 @@ float pid_update(controller pid, float measurement)
 
         // Calculate derivative term.
         float derivative = (error - pid->prev_error) / pid->Ts;
-        float D = pid->kd * derivative;
+        float D          = pid->kd * derivative;
 
         // Calculate PID controller output.
         float output = P + I + D;

@@ -1,8 +1,8 @@
-../Src/systick.c:35:6:SysTick_Handler	2
-../Src/systick.c:48:6:systick_init	3
-../Src/systick.c:76:6:systick_disable_interrupt	1
-../Src/systick.c:81:6:systick_enable_interrupt	1
-../Src/systick.c:86:6:systick_delay_ms	2
-../Src/systick.c:95:10:systick_get_ticks	1
-../Src/systick.c:100:6:systick_clear_ticks	1
-../Src/systick.c:105:13:systick_set_freq	1
+../Src/systick.c:46:6:SysTick_Handler	3
+../Src/systick.c:68:6:systick_init	3
+../Src/systick.c:96:6:systick_disable_interrupt	1
+../Src/systick.c:101:6:systick_enable_interrupt	1
+../Src/systick.c:106:6:systick_delay_ms	2
+../Src/systick.c:115:10:systick_get_ticks	1
+../Src/systick.c:120:6:systick_clear_ticks	1
+../Src/systick.c:125:13:systick_set_freq	1

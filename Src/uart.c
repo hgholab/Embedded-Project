@@ -14,7 +14,7 @@ static uint32_t uart2_calc_brr(const uint32_t clock_freq, const uint32_t baud_ra
 
 void USART2_IRQHandler(void)
 {
-        uart_read_char = (uint8_t)(USART2->DR & 0xFF);
+        uart_read_char             = (uint8_t)(USART2->DR & 0xFF);
         uart_rx_new_char_available = true;
 }
 
@@ -40,7 +40,7 @@ void uart2_init(void)
         USART2->CR1 |= USART_CR1_RXNEIE;
 
         // Enable NVIC line for USART2.
-        NVIC_SetPriority(USART2_IRQn, 0);
+        NVIC_SetPriority(USART2_IRQn, 1);
         NVIC_EnableIRQ(USART2_IRQn);
 
         // Enable USART2.
@@ -63,7 +63,7 @@ void uart2_write_char_blocking(char ch)
  */
 static uint32_t uart2_calc_brr(const uint32_t clock_freq, const uint32_t baud_rate)
 {
-        float usartdiv = ((float)clock_freq) / (16.0f * baud_rate);
+        float usartdiv    = ((float)clock_freq) / (16.0f * baud_rate);
 
         uint32_t mantissa = (uint32_t)usartdiv;
         uint32_t fraction = (uint32_t)((usartdiv - mantissa) * 16.0f + 0.5f);
