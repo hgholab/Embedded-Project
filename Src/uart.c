@@ -1,25 +1,43 @@
+/*
+ * uart.c
+ *
+ * Description:
+ *     Provides a basic interrupt-driven UART interface using USART2.
+ *
+ *     This module:
+ *     - Configures USART2 for asynchronous serial communication
+ *     - Uses 115200 baud, 8 data bits, no parity, and 1 stop bit (8N1)
+ *     - Enables transmit and receive functionality
+ *     - Handles received characters via the USART2 RX interrupt
+ *
+ * Notes:
+ *     - USART2 is clocked from the APB1 peripheral bus.
+ *     - RX data is captured in the USART2 interrupt handler.
+ *     - USART2_IRQHandler handles RXNE interrupts for character reception.
+ *     - printf is retargeted to UART by using uart2_write_char_blocking.
+ */
+
 #include "stm32f4xx.h"
 
 #include "uart.h"
 
-#include "cli.h"
 #include "clock.h"
+#include "scheduler.h"
 
 #define UART2_BAUDRATE 115200UL
 
 volatile uint8_t uart_read_char;
-volatile bool uart_rx_new_char_available;
 
 static uint32_t uart2_calc_brr(const uint32_t clock_freq, const uint32_t baud_rate);
 
 void USART2_IRQHandler(void)
 {
-        uart_read_char             = (uint8_t)(USART2->DR & 0xFF);
-        uart_rx_new_char_available = true;
+        uart_read_char = (uint8_t)(USART2->DR & 0xFF);
+        ready_flag_word |= TASK1;
 }
 
 /*
- * Initialize USART2 for 115200 baud, 8 data bits, no parity, 1 stop bit.
+ * Initialize USART2 for 115200 baud, 8 data bits, no parity, and 1 stop bit.
  * The peripheral clock for USART2 (APB1) is 50 MHz based on clock tree.
  */
 void uart2_init(void)
@@ -61,9 +79,9 @@ void uart2_write_char_blocking(char ch)
  * Calculates the USART2->BRR register value based on the
  * clock frequency of APB1 and the desired baud rate.
  */
-static uint32_t uart2_calc_brr(const uint32_t clock_freq, const uint32_t baud_rate)
+static uint32_t uart2_calc_brr(uint32_t clock_freq, uint32_t baud_rate)
 {
-        float usartdiv    = ((float)clock_freq) / (16.0f * baud_rate);
+        float usartdiv = ((float)clock_freq) / (16.0f * baud_rate);
 
         uint32_t mantissa = (uint32_t)usartdiv;
         uint32_t fraction = (uint32_t)((usartdiv - mantissa) * 16.0f + 0.5f);

@@ -1,6 +1,6 @@
-../Src/clock.c:67:6:clock_init	8	static
-../Src/clock.c:91:13:clock_enable_HSE	4	static
-../Src/clock.c:110:13:clock_configure_flash_wait_states	16	static
-../Src/clock.c:132:13:clock_configure_prescalers	4	static
-../Src/clock.c:166:13:clock_configure_PLL	16	static
-../Src/clock.c:215:13:clock_switch_SYSCLK_to_PLL	4	static
+../Src/clock.c:60:6:clock_init	8	static
+../Src/clock.c:77:13:clock_enable_HSE	4	static
+../Src/clock.c:96:13:clock_configure_flash_wait_states	16	static
+../Src/clock.c:118:13:clock_configure_prescalers	4	static
+../Src/clock.c:150:13:clock_configure_PLL	16	static
+../Src/clock.c:190:13:clock_switch_SYSCLK_to_PLL	4	static

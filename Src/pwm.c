@@ -11,11 +11,12 @@
  *     as alternate function AF01 for TIM2_CH1.
  */
 
+#include <stdint.h>
+
 #include "stm32f4xx.h"
 
 #include "pwm.h"
 
-#include "clock.h"
 #include "utils.h"
 
 #define TIM_CCMR1_OC1M_PWM1 (6UL << TIM_CCMR1_OC1M_Pos)
@@ -45,7 +46,7 @@ void pwm_tim2_init(void)
         TIM2->CCER &= ~TIM_CCER_CC1P;
 
         // Configure CCR1 (start with 0% duty cycle).
-        TIM2->CCR1 = 0;
+        TIM2->CCR1 = 0U;
 
         // Enable CCR1 preload.
         TIM2->CCMR1 |= TIM_CCMR1_OC1PE;
@@ -56,11 +57,10 @@ void pwm_tim2_init(void)
 
 void pwm_tim2_set_duty(float duty)
 {
+        // duty is in percentage (0 - 100)
         duty         = CLAMP(duty, 0.0f, 100.0f);
-
         uint32_t arr = TIM2->ARR;
         uint32_t ccr = (uint32_t)(((arr + 1UL) * duty + 50.0f) / 100.0f);
-
         TIM2->CCR1   = ccr;
 }
 

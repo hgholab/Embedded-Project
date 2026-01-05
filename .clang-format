@@ -41,7 +41,7 @@ SortIncludes:
 
 AlignConsecutiveAssignments:
   Enabled: true
-  AcrossEmptyLines: true
+  AcrossEmptyLines: false
   AcrossComments: true
 
 AlignConsecutiveMacros:
@@ -52,3 +52,6 @@ AlignConsecutiveMacros:
 BinPackArguments: false
 
 BinPackParameters: OnePerLine
+
+BraceWrapping:
+  AfterControlStatement: Never

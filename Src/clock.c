@@ -18,7 +18,7 @@
  *         PCLK2  = 100 MHz
  */
 
-
+// stddef.h is used to access size_t type definition
 #include <stddef.h>
 #include <stdint.h>
 
@@ -26,34 +26,27 @@
 
 #include "clock.h"
 
+#define WAIT_STATE 3
+#define PLLM_VALUE 4UL
+#define PLLN_VALUE 100UL
+#define PLLP_VALUE 2UL
 
-#define WAIT_STATE        3
-
-#define PLLM_VALUE        4UL
-#define PLLN_VALUE        100UL
-#define PLLP_VALUE        2UL
-#define PLLQ_VALUE        4UL
-
-
-static uint32_t const flash_acr_latency_ws[] =
-{
-    FLASH_ACR_LATENCY_0WS,
-    FLASH_ACR_LATENCY_1WS,
-    FLASH_ACR_LATENCY_2WS,
-    FLASH_ACR_LATENCY_3WS,
-    FLASH_ACR_LATENCY_4WS,
-    FLASH_ACR_LATENCY_5WS,
-    FLASH_ACR_LATENCY_6WS,
-    FLASH_ACR_LATENCY_7WS,
+static const uint32_t flash_acr_latency_ws[] = {
+        FLASH_ACR_LATENCY_0WS,
+        FLASH_ACR_LATENCY_1WS,
+        FLASH_ACR_LATENCY_2WS,
+        FLASH_ACR_LATENCY_3WS,
+        FLASH_ACR_LATENCY_4WS,
+        FLASH_ACR_LATENCY_5WS,
+        FLASH_ACR_LATENCY_6WS,
+        FLASH_ACR_LATENCY_7WS,
 };
-
 
 static void clock_enable_HSE(void);
 static void clock_configure_flash_wait_states(size_t wait_state);
 static void clock_configure_prescalers(void);
 static void clock_configure_PLL(void);
 static void clock_switch_SYSCLK_to_PLL(void);
-
 
 /*
  * Complete system clock initialization.
@@ -66,19 +59,12 @@ static void clock_switch_SYSCLK_to_PLL(void);
  */
 void clock_init(void)
 {
-    // Enable the external 8 MHz clock.
-    clock_enable_HSE();
-
-    clock_configure_flash_wait_states(WAIT_STATE);
-
-    // Set prescalers so that AHB=100 MHz, APB1=50 MHz, APB2=100 MHz.
-    clock_configure_prescalers();
-
-    clock_configure_PLL();
-
-    clock_switch_SYSCLK_to_PLL();
+        clock_enable_HSE();
+        clock_configure_flash_wait_states(WAIT_STATE);
+        clock_configure_prescalers();
+        clock_configure_PLL();
+        clock_switch_SYSCLK_to_PLL();
 }
-
 
 /*
  * Enable the High-Speed External (HSE) clock in bypass mode.
@@ -90,15 +76,15 @@ void clock_init(void)
  */
 static void clock_enable_HSE(void)
 {
+        // Select bypass mode since OSC_IN is driven by an external clock.
+        RCC->CR |= RCC_CR_HSEBYP;
 
-    // Select bypass mode since OSC_IN is driven by an external clock.
-    RCC->CR |= RCC_CR_HSEBYP;
+        // Enable the external high-speed clock.
+        RCC->CR |= RCC_CR_HSEON;
 
-    // Enable the external high-speed clock.
-    RCC->CR |= RCC_CR_HSEON;
-
-    // Wait until the HSE clock becomes ready.
-    while (!(RCC->CR & RCC_CR_HSERDY)) ;
+        // Wait until the HSE clock becomes ready.
+        while (!(RCC->CR & RCC_CR_HSERDY))
+                ;
 }
 
 /*
@@ -109,17 +95,17 @@ static void clock_enable_HSE(void)
  */
 static void clock_configure_flash_wait_states(size_t wait_state)
 {
-    FLASH->ACR &= ~(FLASH_ACR_LATENCY_Msk);
-    FLASH->ACR |= flash_acr_latency_ws[wait_state];
+        FLASH->ACR &= ~(FLASH_ACR_LATENCY_Msk);
+        FLASH->ACR |= flash_acr_latency_ws[wait_state];
 
-    // Enable Flash pre-fetch to reduce wait-state penalties.
-    FLASH->ACR |= FLASH_ACR_PRFTEN;
+        // Enable Flash pre-fetch to reduce wait-state penalties.
+        FLASH->ACR |= FLASH_ACR_PRFTEN;
 
-    // Enable instruction cache for faster code fetches.
-    FLASH->ACR |= FLASH_ACR_ICEN;
+        // Enable instruction cache for faster code fetches.
+        FLASH->ACR |= FLASH_ACR_ICEN;
 
-    // Enable data cache for faster Flash data accesses.
-    FLASH->ACR |= FLASH_ACR_DCEN;
+        // Enable data cache for faster Flash data accesses.
+        FLASH->ACR |= FLASH_ACR_DCEN;
 }
 
 /*
@@ -131,27 +117,26 @@ static void clock_configure_flash_wait_states(size_t wait_state)
  */
 static void clock_configure_prescalers(void)
 {
+        /*
+         * AHB prescaler: HCLK = SYSCLK / 1
+         * Clear HPRE bits [7:4] : no division.
+         */
+        RCC->CFGR &= ~RCC_CFGR_HPRE;
+        RCC->CFGR |= RCC_CFGR_HPRE_DIV1;
 
-    /*
-     * AHB prescaler: HCLK = SYSCLK / 1
-     * Clear HPRE bits [7:4] : no division.
-     */
-    RCC->CFGR &= ~RCC_CFGR_HPRE;
-    RCC->CFGR |= RCC_CFGR_HPRE_DIV1;
+        /*
+         * APB1 prescaler: PCLK1 = HCLK / 2
+         * Clear PPRE1 bits [12:10], then set divide-by-2.
+         */
+        RCC->CFGR &= ~RCC_CFGR_PPRE1;
+        RCC->CFGR |= RCC_CFGR_PPRE1_DIV2;
 
-    /*
-     * APB1 prescaler: PCLK1 = HCLK / 2
-     * Clear PPRE1 bits [12:10], then set divide-by-2.
-     */
-    RCC->CFGR &= ~RCC_CFGR_PPRE1;
-    RCC->CFGR |= RCC_CFGR_PPRE1_DIV2;
-
-    /*
-     * APB2 prescaler: PCLK2 = HCLK / 1
-     * Clear PPRE2 bits [15:13] : no division.
-     */
-    RCC->CFGR &= ~RCC_CFGR_PPRE2;
-    RCC->CFGR |= RCC_CFGR_PPRE2_DIV1;
+        /*
+         * APB2 prescaler: PCLK2 = HCLK / 1
+         * Clear PPRE2 bits [15:13] : no division.
+         */
+        RCC->CFGR &= ~RCC_CFGR_PPRE2;
+        RCC->CFGR |= RCC_CFGR_PPRE2_DIV1;
 }
 
 /*
@@ -161,49 +146,39 @@ static void clock_configure_prescalers(void)
  * - PLLM = 4   : VCO_in  = 2 MHz   (must be 1–2 MHz)
  * - PLLN = 100 : VCO_out = 200 MHz (must be 100–432 MHz)
  * - PLLP = 2   : SYSCLK  = 100 MHz
- * - PLLQ = 4   : used for USB / RNG / SDIO clocks
  */
 static void clock_configure_PLL(void)
 {
+        // Disable PLL before configuration.
+        RCC->CR &= ~RCC_CR_PLLON;
+        while (RCC->CR & RCC_CR_PLLRDY)
+                ;
 
-    // Make sure PLL is disabled before configuration.
-    RCC->CR &= ~RCC_CR_PLLON;
-    while (RCC->CR & RCC_CR_PLLRDY) ;
+        // Start from current value to preserve reserved bits.
+        uint32_t pll_cfgr = RCC->PLLCFGR;
 
-    // Start from current value to preserve reserved bits.
-    uint32_t pll_cfgr = RCC->PLLCFGR;
+        pll_cfgr &= ~(RCC_PLLCFGR_PLLM_Msk | RCC_PLLCFGR_PLLN_Msk | RCC_PLLCFGR_PLLP_Msk |
+                      RCC_PLLCFGR_PLLSRC_Msk);
 
-    pll_cfgr &= ~(RCC_PLLCFGR_PLLM_Msk |
-                 RCC_PLLCFGR_PLLN_Msk |
-                 RCC_PLLCFGR_PLLP_Msk |
-                 RCC_PLLCFGR_PLLQ_Msk |
-                 RCC_PLLCFGR_PLLSRC_Msk);
+        // Select HSE as PLL source.
+        pll_cfgr |= RCC_PLLCFGR_PLLSRC_HSE;
 
-    // Select HSE as PLL source.
-    pll_cfgr |= RCC_PLLCFGR_PLLSRC_HSE;
+        pll_cfgr |= (PLLM_VALUE << 0U);
 
-    pll_cfgr |= (PLLM_VALUE << 0);
+        pll_cfgr |= (PLLN_VALUE << 6U);
 
-    pll_cfgr |= (PLLN_VALUE << 6);
+        // Set PLLP (bits 17:16), encoded as (PLLP/2 - 1)
+        pll_cfgr |= (((PLLP_VALUE / 2U) - 1U) << 16U);
 
-    // Set PLLP (bits 17:16), encoded as (PLLP/2 - 1)
-    pll_cfgr |= ((PLLP_VALUE / 2U - 1U) << 16);
+        // Write back the configuration (reserved bits preserved).
+        RCC->PLLCFGR = pll_cfgr;
 
-    /*
-     * Set PLLQ (bits 27:24)
-     * In this project, we do not use USB, RNG, and SDIO. So we only need to
-     * make sure that PLLQ is in the acceptable range.
-     */
-    pll_cfgr |= (PLLQ_VALUE << 24);
+        // Enable PLL.
+        RCC->CR |= RCC_CR_PLLON;
 
-    // Write back the configuration (reserved bits preserved).
-    RCC->PLLCFGR = pll_cfgr;
-
-    // Enable PLL.
-    RCC->CR |= RCC_CR_PLLON;
-
-    // Wait until PLL is locked and ready.
-    while (!(RCC->CR & RCC_CR_PLLRDY)) ;
+        // Wait until PLL is locked and ready.
+        while (!(RCC->CR & RCC_CR_PLLRDY))
+                ;
 }
 
 /*
@@ -214,11 +189,12 @@ static void clock_configure_PLL(void)
  */
 static void clock_switch_SYSCLK_to_PLL(void)
 {
-    RCC->CFGR &= ~RCC_CFGR_SW_Msk;
+        RCC->CFGR &= ~RCC_CFGR_SW_Msk;
 
-    // Select PLL as system clock.
-    RCC->CFGR |= RCC_CFGR_SW_PLL;
+        // Select PLL as system clock.
+        RCC->CFGR |= RCC_CFGR_SW_PLL;
 
-    // Wait until PLL is actually used as system clock.
-    while ((RCC->CFGR & RCC_CFGR_SWS_Msk) != RCC_CFGR_SWS_PLL) ;
+        // Wait until PLL is actually used as system clock.
+        while ((RCC->CFGR & RCC_CFGR_SWS_Msk) != RCC_CFGR_SWS_PLL)
+                ;
 }

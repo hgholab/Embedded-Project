@@ -1,6 +1,6 @@
 C:/Users/hgholab/OneDrive/Source Code/Embedded Systems/Modules/Final_Project/chip_headers/CMSIS/Include/core_cm4.h:1684:22:__NVIC_EnableIRQ	2
 C:/Users/hgholab/OneDrive/Source Code/Embedded Systems/Modules/Final_Project/chip_headers/CMSIS/Include/core_cm4.h:1814:22:__NVIC_SetPriority	2
-../Src/uart.c:15:6:USART2_IRQHandler	1
-../Src/uart.c:25:6:uart2_init	1
-../Src/uart.c:50:6:uart2_write_char_blocking	2
-../Src/uart.c:64:17:uart2_calc_brr	2
+../Src/uart.c:33:6:USART2_IRQHandler	1
+../Src/uart.c:43:6:uart2_init	1
+../Src/uart.c:68:6:uart2_write_char_blocking	2
+../Src/uart.c:82:17:uart2_calc_brr	2

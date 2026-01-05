@@ -2,7 +2,9 @@ C:/Users/hgholab/OneDrive/Source Code/Embedded Systems/Modules/Final_Project/chi
 C:/Users/hgholab/OneDrive/Source Code/Embedded Systems/Modules/Final_Project/chip_headers/CMSIS/Include/core_cm4.h:1722:22:__NVIC_DisableIRQ	2
 C:/Users/hgholab/OneDrive/Source Code/Embedded Systems/Modules/Final_Project/chip_headers/CMSIS/Include/core_cm4.h:1775:22:__NVIC_ClearPendingIRQ	2
 C:/Users/hgholab/OneDrive/Source Code/Embedded Systems/Modules/Final_Project/chip_headers/CMSIS/Include/core_cm4.h:1814:22:__NVIC_SetPriority	2
-../Src/timer.c:21:6:TIM2_IRQHandler	6
-../Src/timer.c:41:6:TIM3_IRQHandler	3
-../Src/timer.c:56:6:tim2_init	1
-../Src/timer.c:99:6:tim3_init	1
+../Src/timer.c:22:6:TIM2_IRQHandler	1
+../Src/timer.c:29:6:TIM3_IRQHandler	1
+../Src/timer.c:35:6:tim2_init	1
+../Src/timer.c:77:6:tim3_init	1
+../Src/timer.c:119:6:tim2_update_loop	13
+../Src/timer.c:178:6:tim3_read_button	1

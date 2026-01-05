@@ -1,8 +1,6 @@
 #ifndef PWM_H
 #define PWM_H
 
-#include <stdint.h>
-
 void pwm_tim2_init(void);
 void pwm_tim2_set_duty(float duty);
 void pwm_tim2_disable(void);

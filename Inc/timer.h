@@ -4,9 +4,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-extern volatile bool tim3_flag;
-
-void tim3_init(uint32_t pwm_freq_hz);
-void tim2_init(uint32_t pwm_freq_hz);
+void tim3_init(uint32_t timer_freq);
+void tim2_init(uint32_t timer_freq);
+void tim2_update_loop(void);
+void tim3_read_button(void);
 
 #endif

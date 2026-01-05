@@ -1,3 +1,15 @@
+/*
+ * controller.c
+ *
+ * Description:
+ *     Discrete-time PID controller implementation.
+ *
+ * Notes:
+ *     - pid_init() initializes controller parameters and state.
+ *     - pid_update() computes one control step.
+ *     - Gain and reference setter/getter functions are provided.
+ */
+
 #include "controller.h"
 
 #include "utils.h"
@@ -43,35 +55,58 @@ void pid_init(controller pid,
         pid->reference          = reference;
 }
 
+// float pid_update(controller pid, float measurement)
+// {
+//         // Compute error.
+//         float error = pid->reference - measurement;
+
+//         // Calculate proportional term.
+//         float p     = pid->kp * error;
+
+//         // Calculate integral term.
+//         pid->integral += (pid->ki * pid->Ts * error);
+
+//         // limit integral term to avoid windup.
+//         pid->integral    = CLAMP(pid->integral, pid->int_out_min, pid->int_out_max);
+
+//         float i          = pid->integral;
+
+//         // Calculate derivative term.
+//         float derivative = (error - pid->prev_error) / pid->Ts;
+//         float d          = pid->kd * derivative;
+
+//         // Calculate PID controller output.
+//         float output     = p + i + d;
+
+//         // Apply output saturation.
+//         output           = CLAMP(output, pid->controller_out_min, pid->controller_out_max);
+
+//         // Save state for next call.
+//         pid->prev_error  = error;
+
+//         return output;
+// }
+
 float pid_update(controller pid, float measurement)
 {
-        // Compute error.
-        float error = pid->reference - measurement;
+        float e = pid->reference - measurement;
 
-        // Calculate proportional term.
-        float P = pid->kp * error;
+        // P
+        float p = pid->kp * e;
 
-        // Calculate integral term.
-        pid->integral += (pid->ki * pid->Ts * error);
+        // I contribution uses previous integrator state (z^-1 convention)
+        float i = pid->integral;
 
-        // limit integral term to avoid windup.
-        pid->integral = CLAMP(pid->integral, pid->int_out_min, pid->int_out_max);
+        // D
+        float d = pid->kd * (e - pid->prev_error) / pid->Ts;
 
-        float I = pid->integral;
+        // Output uses I[k-1]
+        float output = p + i + d;
 
-        // Calculate derivative term.
-        float derivative = (error - pid->prev_error) / pid->Ts;
-        float D          = pid->kd * derivative;
+        // Update integrator after computing output: I[k] = I[k-1] + Ki*Ts*e[k]
+        pid->integral += pid->ki * pid->Ts * e;
 
-        // Calculate PID controller output.
-        float output = P + I + D;
-
-        // Apply output saturation.
-        output = CLAMP(output, pid->controller_out_min, pid->controller_out_max);
-
-        // Save state for next call.
-        pid->prev_error = error;
-
+        pid->prev_error = e;
         return output;
 }
 

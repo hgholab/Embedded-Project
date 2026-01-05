@@ -10,15 +10,13 @@
  *    takes effect before any floating-point instructions are executed.
  */
 
-
 #include "stm32f4xx.h"
 
 #include "fpu.h"
 
-
 void fpu_enable(void)
 {
-    SCB->CPACR |= (0xF << 20);
-    __DSB();
-    __ISB();
+        SCB->CPACR |= (0xF << 20);
+        __DSB();
+        __ISB();
 }

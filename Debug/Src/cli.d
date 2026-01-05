@@ -7,8 +7,9 @@ Src/cli.o: ../Src/cli.c \
  C:/Users/hgholab/OneDrive/Source\ Code/Embedded\ Systems/Modules/Final_Project/chip_headers/CMSIS/Include/cmsis_gcc.h \
  C:/Users/hgholab/OneDrive/Source\ Code/Embedded\ Systems/Modules/Final_Project/chip_headers/CMSIS/Include/mpu_armv7.h \
  C:/Users/hgholab/OneDrive/Source\ Code/Embedded\ Systems/Modules/Final_Project/chip_headers/CMSIS/Device/ST/STM32F4xx/Include/system_stm32f4xx.h \
- ../Inc/cli.h ../Inc/controller.h ../Inc/converter.h ../Inc/gpio.h \
- ../Inc/systick.h ../Inc/terminal.h ../Inc/uart.h ../Inc/utils.h
+ ../Inc/cli.h ../Inc/converter.h ../Inc/controller.h ../Inc/gpio.h \
+ ../Inc/pwm.h ../Inc/systick.h ../Inc/terminal.h ../Inc/uart.h \
+ ../Inc/utils.h
 C:/Users/hgholab/OneDrive/Source\ Code/Embedded\ Systems/Modules/Final_Project/chip_headers/CMSIS/Device/ST/STM32F4xx/Include/stm32f4xx.h:
 C:/Users/hgholab/OneDrive/Source\ Code/Embedded\ Systems/Modules/Final_Project/chip_headers/CMSIS/Device/ST/STM32F4xx/Include/stm32f411xe.h:
 C:/Users/hgholab/OneDrive/Source\ Code/Embedded\ Systems/Modules/Final_Project/chip_headers/CMSIS/Include/core_cm4.h:
@@ -18,9 +19,10 @@ C:/Users/hgholab/OneDrive/Source\ Code/Embedded\ Systems/Modules/Final_Project/c
 C:/Users/hgholab/OneDrive/Source\ Code/Embedded\ Systems/Modules/Final_Project/chip_headers/CMSIS/Include/mpu_armv7.h:
 C:/Users/hgholab/OneDrive/Source\ Code/Embedded\ Systems/Modules/Final_Project/chip_headers/CMSIS/Device/ST/STM32F4xx/Include/system_stm32f4xx.h:
 ../Inc/cli.h:
-../Inc/controller.h:
 ../Inc/converter.h:
+../Inc/controller.h:
 ../Inc/gpio.h:
+../Inc/pwm.h:
 ../Inc/systick.h:
 ../Inc/terminal.h:
 ../Inc/uart.h:

@@ -8,7 +8,8 @@ Src/timer.o: ../Src/timer.c \
  C:/Users/hgholab/OneDrive/Source\ Code/Embedded\ Systems/Modules/Final_Project/chip_headers/CMSIS/Include/mpu_armv7.h \
  C:/Users/hgholab/OneDrive/Source\ Code/Embedded\ Systems/Modules/Final_Project/chip_headers/CMSIS/Device/ST/STM32F4xx/Include/system_stm32f4xx.h \
  ../Inc/timer.h ../Inc/clock.h ../Inc/controller.h ../Inc/converter.h \
- ../Inc/gpio.h ../Inc/pwm.h ../Inc/terminal.h ../Inc/utils.h
+ ../Inc/gpio.h ../Inc/pwm.h ../Inc/scheduler.h ../Inc/sine_lut.h \
+ ../Inc/terminal.h ../Inc/utils.h
 C:/Users/hgholab/OneDrive/Source\ Code/Embedded\ Systems/Modules/Final_Project/chip_headers/CMSIS/Device/ST/STM32F4xx/Include/stm32f4xx.h:
 C:/Users/hgholab/OneDrive/Source\ Code/Embedded\ Systems/Modules/Final_Project/chip_headers/CMSIS/Device/ST/STM32F4xx/Include/stm32f411xe.h:
 C:/Users/hgholab/OneDrive/Source\ Code/Embedded\ Systems/Modules/Final_Project/chip_headers/CMSIS/Include/core_cm4.h:
@@ -23,5 +24,7 @@ C:/Users/hgholab/OneDrive/Source\ Code/Embedded\ Systems/Modules/Final_Project/c
 ../Inc/converter.h:
 ../Inc/gpio.h:
 ../Inc/pwm.h:
+../Inc/scheduler.h:
+../Inc/sine_lut.h:
 ../Inc/terminal.h:
 ../Inc/utils.h:

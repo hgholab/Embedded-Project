@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdio.h>
 
 #include "stm32f4xx.h"
@@ -9,50 +10,28 @@
 #include "converter.h"
 #include "gpio.h"
 #include "pwm.h"
+#include "scheduler.h"
+#include "sine_lut.h"
 #include "terminal.h"
 #include "utils.h"
 
 #define TIM2_CLOCK_FREQUENCY 10000UL
 #define TIM3_CLOCK_FREQUENCY 10000UL
-#define ABS(x)               (((x) > 0.0f) ? (x) : (-1.0f * (x)))
-
-volatile bool tim3_flag = false;
-
-void TIM2_IRQHandler(void)
-{
-        // Clear UIF.
-        TIM2->SR &= ~TIM_SR_UIF;
-
-        // Every 5ms, update the control loop and converter state variables.
-        u[0][0] = pid_update(&pid, y[0][0]);
-        converter_update(&plant, u, y);
-
-        /*
-         * Next, we change the brightness of the green LED based on the output of the controller.
-         * First we normalize the controller output. We assume a maximum reference voltage of
-         * REF_Max which is 50, and based on that the controller output is normalized.
-         */
-        // Calculate the duty cycle in percentage.
-        float duty = 100.0f * CLAMP(ABS(u[0][0]) / REF_MAX, 0.0f, 1.0f);
-        // Set timer 2 channel 1 pwm duty cycle.
-        pwm_tim2_set_duty(duty);
-}
-
-void TIM3_IRQHandler(void)
-{
-        // Clear UIF.
-        TIM3->SR &= ~TIM_SR_UIF;
-
-        // Detect change in button status to register it as one button press.
-        bool button_is_pressed = gpio_button_is_pressed();
-        if (button_is_pressed && !button_last_push_status)
-        {
-                printf("Button is pushed!!\r\n");
-        }
-        button_last_push_status = button_is_pressed;
-}
 
 // TIM2 update event interrupt is used for updating the control loop and providing pwm for the LED.
+void TIM2_IRQHandler(void)
+{
+        TIM2->SR &= ~TIM_SR_UIF;
+        ready_flag_word |= TASK0;
+}
+
+// TIM3 update event interrupt is used for button debounce.
+void TIM3_IRQHandler(void)
+{
+        TIM3->SR &= ~TIM_SR_UIF;
+        ready_flag_word |= TASK2;
+}
+
 void tim2_init(uint32_t timer_freq)
 {
         // Enable clock for TIM2.
@@ -70,8 +49,8 @@ void tim2_init(uint32_t timer_freq)
         uint32_t auto_reload_register = (tim2_clock / timer_freq) - 1;
 
         // Set prescaler and auto-reload.
-        TIM2->PSC                     = prescaler;
-        TIM2->ARR                     = auto_reload_register;
+        TIM2->PSC = prescaler;
+        TIM2->ARR = auto_reload_register;
 
         // Enable ARR preload (prescaler (PSC) is always buffered).
         TIM2->CR1 |= TIM_CR1_ARPE;
@@ -95,7 +74,6 @@ void tim2_init(uint32_t timer_freq)
         TIM2->CR1 |= TIM_CR1_CEN;
 }
 
-// TIM3 update event interrupt is used for button debounce.
 void tim3_init(uint32_t timer_freq)
 {
         // Enable clock for TIM3.
@@ -113,8 +91,8 @@ void tim3_init(uint32_t timer_freq)
         uint32_t auto_reload_register = (tim3_clock / timer_freq) - 1;
 
         // Set prescaler and auto-reload.
-        TIM3->PSC                     = prescaler;
-        TIM3->ARR                     = auto_reload_register;
+        TIM3->PSC = prescaler;
+        TIM3->ARR = auto_reload_register;
 
         // Enable ARR preload (prescaler (PSC) is always buffered).
         TIM3->CR1 |= TIM_CR1_ARPE;
@@ -136,4 +114,77 @@ void tim3_init(uint32_t timer_freq)
 
         // Enable counter.
         TIM3->CR1 |= TIM_CR1_CEN;
+}
+
+void tim2_update_loop(void)
+{
+        uint32_t arr = TIM2->ARR;
+
+        converter_type_t converter_type = converter_get_type();
+
+        switch (converter_type)
+        {
+        case DC_DC_IDEAL:
+        case INVERTER_IDEAL:
+                /*
+                 * Based on the assignment instruction, in the basic version, the converter module
+                 * takes a reference directly from the controller output (H-bridge taken as ideal).
+                 * UIF should be cleared.
+                 */
+                TIM2->SR &= ~TIM_SR_UIF;
+                u[0][0] = pid_update(&pid, y[0][0]);
+                converter_update(&plant, u, y);
+                break;
+        case DC_DC_H_BRIDGE:
+                if (TIM2->SR & TIM_SR_UIF)
+                {
+                        /*
+                         * Update event interrupt (end of the switching period). If we show the DC
+                         * link voltage as v_link, here bridge output voltage goes from -v_link to
+                         * v_link. UIF should be cleared.
+                         */
+                        TIM2->SR &= ~TIM_SR_UIF;
+                        TIM2->CCR1 = pid_update(&pid, y[0][0]) * arr;
+                        u[0][0]    = converter_dc_link_voltage;
+                }
+                else if (TIM2->SR & TIM_SR_CC1IF)
+                {
+                        /**
+                         * Counter match interrupt (somewhere in the middle of the switching
+                         * period). Here bridge output voltage goes from v_link to -v_link. CC1IE
+                         * should be cleared.
+                         */
+                        TIM2->SR &= ~TIM_SR_CC1IF;
+                        u[0][0] = -1.0f * converter_dc_link_voltage;
+                }
+                converter_update(&plant, u, y);
+                break;
+        case INVERTER_H_BRIDGE:
+                /* code */
+                break;
+        }
+
+        /*
+         * Next, we change the brightness of the green LED based on the output of the controller.
+         * First we normalize the controller output. We assume a maximum reference voltage of
+         * REF_Max which is 50, and based on that the controller output is normalized.
+         */
+        // Calculate the duty cycle in percentage.
+        float duty = 100.0f * CLAMP(ABS_FLOAT(u[0][0] / REF_MAX), 0.0f, 1.0f);
+        // Set timer 2 channel 1 pwm duty cycle.
+        pwm_tim2_set_duty(duty);
+}
+
+void tim3_read_button(void)
+{
+        // Clear UIF.
+        TIM3->SR &= ~TIM_SR_UIF;
+
+        // Detect change in button status to register it as one button press.
+        bool button_is_pressed = gpio_button_is_pressed();
+        if (button_is_pressed && !button_last_push_status)
+        {
+                // button_push_flag = true;
+        }
+        button_last_push_status = button_is_pressed;
 }

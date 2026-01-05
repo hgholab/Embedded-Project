@@ -1,6 +1,7 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
+// Maximum reference value is the same as DC link voltage
 #define REF_MAX 50.0f
 
 typedef struct pid_controller *controller;

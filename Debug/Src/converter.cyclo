@@ -1,2 +1,6 @@
-../Src/converter.c:31:6:converter_init	2
-../Src/converter.c:37:6:converter_update	8
+../Src/converter.c:61:6:converter_init	2
+../Src/converter.c:67:6:converter_update	8
+../Src/converter.c:112:18:converter_get_type	1
+../Src/converter.c:117:6:converter_set_type	1
+../Src/converter.c:125:8:converter_get_mode	1
+../Src/converter.c:130:6:converter_set_mode	3

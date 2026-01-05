@@ -7,7 +7,7 @@
  *     - PA2 as USART2_TX (AF07)
  *     - PA3 as USART2_RX (AF07)
  *     - PA5 as TIM2_CH1  (AF01)
- *     And on Port C, this file configures:
+ *     And on Port C, it configures:
  *     - PC13 as the board push button
  */
 
@@ -16,8 +16,6 @@
 #include "stm32f4xx.h"
 
 #include "gpio.h"
-
-#include "systick.h"
 
 // Helpers for locating and masking the 2-bit MODE field of a GPIO pin.
 #define GPIO_MODER_MODE_Pos(pin)     ((pin) * 2U)
@@ -47,32 +45,32 @@
 
 typedef enum
 {
-        GPIO_PIN_MODE_INPUT     = 0x0UL,
-        GPIO_PIN_MODE_OUTPUT    = 0x1UL,
-        GPIO_PIN_MODE_ALTERNATE = 0x2UL,
-        GPIO_PIN_MODE_ANALOG    = 0x3UL
-} GPIO_pin_mode_t;
+        GPIO_PIN_MODE_INPUT,
+        GPIO_PIN_MODE_OUTPUT,
+        GPIO_PIN_MODE_ALTERNATE,
+        GPIO_PIN_MODE_ANALOG
+} gpio_pin_mode_t;
 
 typedef enum
 {
-        GPIO_SPEED_LOW       = 0x0UL,
-        GPIO_SPEED_MEDIUM    = 0x1UL,
-        GPIO_SPEED_HIGH      = 0x2UL,
-        GPIO_SPEED_VERY_HIGH = 0x3UL
-} GPIO_speed_t;
+        GPIO_SPEED_LOW,
+        GPIO_SPEED_MEDIUM,
+        GPIO_SPEED_HIGH,
+        GPIO_SPEED_VERY_HIGH
+} gpio_speed_t;
 
 typedef enum
 {
-        GPIO_OTYPE_PUSH_PULL  = 0x0UL,
-        GPIO_OTYPE_OPEN_DRAIN = 0x1UL
-} GPIO_otype_t;
+        GPIO_OTYPE_PUSH_PULL,
+        GPIO_OTYPE_OPEN_DRAIN
+} gpio_otype_t;
 
 typedef enum
 {
-        GPIO_PUPD_NONE      = 0x0UL,
-        GPIO_PUPD_PULL_UP   = 0x1UL,
-        GPIO_PUPD_PULL_DOWN = 0x2UL
-} GPIO_pupd_t;
+        GPIO_PUPD_NONE,
+        GPIO_PUPD_PULL_UP,
+        GPIO_PUPD_PULL_DOWN
+} gpio_pupd_t;
 
 static uint32_t const gpio_port_rcc_ahb1_en[]       = {RCC_AHB1ENR_GPIOAEN,
                                                        RCC_AHB1ENR_GPIOBEN,
@@ -83,15 +81,15 @@ static uint32_t const gpio_port_rcc_ahb1_en[]       = {RCC_AHB1ENR_GPIOAEN,
 static GPIO_TypeDef *const gpio_port_base_address[] = {GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOH};
 
 // This variable shows previous state of button being pushed or not (stable state).
-bool button_last_push_status                        = false;
+bool button_last_push_status = false;
 
-static void gpio_enable_port_clock(GPIO_port_t port);
-static void gpio_set_pin_mode(GPIO_port_t port, GPIO_pin_t pin, GPIO_pin_mode_t mode);
+static void gpio_enable_port_clock(gpio_port_t port);
+static void gpio_set_pin_mode(gpio_port_t port, gpio_pin_t pin, gpio_pin_mode_t mode);
 static void
-gpio_set_pin_alternate_function(GPIO_port_t port, GPIO_pin_t pin, uint32_t alternate_function_code);
-static void gpio_set_pin_ospeed(GPIO_port_t port, GPIO_pin_t pin, GPIO_speed_t speed);
-static void gpio_set_pin_otype(GPIO_port_t port, GPIO_pin_t pin, GPIO_otype_t type);
-static void gpio_set_pin_pupd(GPIO_port_t port, GPIO_pin_t pin, GPIO_pupd_t pupd);
+gpio_set_pin_alternate_function(gpio_port_t port, gpio_pin_t pin, uint32_t alternate_function_code);
+static void gpio_set_pin_ospeed(gpio_port_t port, gpio_pin_t pin, gpio_speed_t speed);
+static void gpio_set_pin_otype(gpio_port_t port, gpio_pin_t pin, gpio_otype_t type);
+static void gpio_set_pin_pupd(gpio_port_t port, gpio_pin_t pin, gpio_pupd_t pupd);
 
 void gpio_init(void)
 {
@@ -137,32 +135,32 @@ void gpio_init(void)
 }
 
 // atomic set: write 1 to lower 16 bits.
-void gpio_set_pin(GPIO_port_t port, GPIO_pin_t pin)
+void gpio_set_pin(gpio_port_t port, gpio_pin_t pin)
 {
         gpio_port_base_address[port]->BSRR = (1UL << pin);
 }
 
 // atomic clear: write 1 to upper 16 bits.
-void gpio_clear_pin(GPIO_port_t port, GPIO_pin_t pin)
+void gpio_clear_pin(gpio_port_t port, gpio_pin_t pin)
 {
         gpio_port_base_address[port]->BSRR = (1UL << (pin + 16U));
 }
 
-void gpio_toggle_pin(GPIO_port_t port, GPIO_pin_t pin)
+void gpio_toggle_pin(gpio_port_t port, gpio_pin_t pin)
 {
         gpio_port_base_address[port]->ODR ^= (1UL << pin);
 }
 
-bool gpio_read_pin_input(GPIO_port_t port, GPIO_pin_t pin)
+bool gpio_read_pin_input(gpio_port_t port, gpio_pin_t pin)
 {
         return (gpio_port_base_address[port]->IDR & (1UL << pin)) != 0;
 }
 
-// This function handles push-button bounce. It is called every 20 ms by timer 3 interrupt.
+// This function handles push-button bounce. It is called every 20 ms by TIM3 interrupt.
 bool gpio_button_is_pressed(void)
 {
         // This variable shows previous state of button being pushed or not (instantaneous state).
-        static bool prev         = false;
+        static bool prev = false;
 
         // Push button is active low.
         bool button_is_pressed   = !gpio_read_pin_input(GPIO_PORT_C, GPIO_PIN_13);
@@ -177,12 +175,12 @@ bool gpio_button_is_pressed(void)
         return button_is_pressed;
 }
 
-static void gpio_enable_port_clock(GPIO_port_t port)
+static void gpio_enable_port_clock(gpio_port_t port)
 {
         RCC->AHB1ENR |= gpio_port_rcc_ahb1_en[port];
 }
 
-static void gpio_set_pin_mode(GPIO_port_t port, GPIO_pin_t pin, GPIO_pin_mode_t mode)
+static void gpio_set_pin_mode(gpio_port_t port, gpio_pin_t pin, gpio_pin_mode_t mode)
 {
         gpio_port_base_address[port]->MODER &= ~(GPIO_MODER_MODE_Msk << GPIO_MODER_MODE_Pos(pin));
 
@@ -190,7 +188,7 @@ static void gpio_set_pin_mode(GPIO_port_t port, GPIO_pin_t pin, GPIO_pin_mode_t 
 }
 
 static void
-gpio_set_pin_alternate_function(GPIO_port_t port, GPIO_pin_t pin, uint32_t alternate_function_code)
+gpio_set_pin_alternate_function(gpio_port_t port, gpio_pin_t pin, uint32_t alternate_function_code)
 {
         /*
          * Pins 0-7 and 8-15 have different AFR registers. This if-else takes care
@@ -214,7 +212,7 @@ gpio_set_pin_alternate_function(GPIO_port_t port, GPIO_pin_t pin, uint32_t alter
         }
 }
 
-static void gpio_set_pin_ospeed(GPIO_port_t port, GPIO_pin_t pin, GPIO_speed_t speed)
+static void gpio_set_pin_ospeed(gpio_port_t port, gpio_pin_t pin, gpio_speed_t speed)
 {
         gpio_port_base_address[port]->OSPEEDR &=
                 ~(GPIO_OSPEEDR_SPEED_Msk << GPIO_OSPEEDR_SPEED_Pos(pin));
@@ -222,7 +220,7 @@ static void gpio_set_pin_ospeed(GPIO_port_t port, GPIO_pin_t pin, GPIO_speed_t s
         gpio_port_base_address[port]->OSPEEDR |= GPIO_OSPEEDR_SPEED(pin, speed);
 }
 
-static void gpio_set_pin_otype(GPIO_port_t port, GPIO_pin_t pin, GPIO_otype_t type)
+static void gpio_set_pin_otype(gpio_port_t port, gpio_pin_t pin, gpio_otype_t type)
 {
         if (type == GPIO_OTYPE_OPEN_DRAIN)
         {
@@ -234,7 +232,7 @@ static void gpio_set_pin_otype(GPIO_port_t port, GPIO_pin_t pin, GPIO_otype_t ty
         }
 }
 
-static void gpio_set_pin_pupd(GPIO_port_t port, GPIO_pin_t pin, GPIO_pupd_t pupd)
+static void gpio_set_pin_pupd(gpio_port_t port, gpio_pin_t pin, gpio_pupd_t pupd)
 {
         gpio_port_base_address[port]->PUPDR &= ~(GPIO_PUPDR_PUPD_Msk << GPIO_PUPDR_PUPD_Pos(pin));
 

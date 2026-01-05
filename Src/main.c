@@ -11,6 +11,8 @@
 #include "fpu.h"
 #include "gpio.h"
 #include "pwm.h"
+#include "scheduler.h"
+#include "sine_lut.h"
 #include "systick.h"
 #include "terminal.h"
 #include "timer.h"
@@ -18,21 +20,27 @@
 
 int main(void)
 {
+        uint32_t timer2_freq = 25UL;
+        uint32_t timer3_freq = 50UL;
+
         // Initialization phase
         fpu_enable();
         clock_init();
         systick_init(SYSTICK_PROCESSOR_CLOCK, false);
-        tim2_init(500UL);
+        sine_lut_init();
+        tim2_init(timer2_freq);
         pwm_tim2_init();
-        tim3_init(50UL);
+        tim3_init(timer3_freq);
         gpio_init();
         uart2_init();
 
         // Disable buffering for stdout so printf outputs immediately.
         setbuf(stdout, NULL);
-        terminal_clear();
 
-        // Variables plant and pid are defined in converter.c and controller.c respectively.
+        /*
+         * Initialize the plant (converter) and the pid controller. Variables plant and pid are
+         * defined in converter.c and controller.c, respectively.
+         */
         converter_init(&plant);
         pid_init(&pid,
                  0.000362f,   // kp
@@ -45,13 +53,9 @@ int main(void)
                  60.000000f,  // controller_out_max (controller output maximum value)
                  10.0f);      // reference
 
+        // Initialize the CLI.
         cli_init();
 
-        for (;;)
-        {
-                if (uart_rx_new_char_available)
-                {
-                        cli_process_rx_byte(uart_read_char);
-                }
-        }
+        scheduler_init();
+        scheduler_run(); // does not return
 }
