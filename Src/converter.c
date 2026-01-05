@@ -16,9 +16,12 @@
 
 #include <stddef.h>
 
+#include "stm32f4xx.h"
+
 #include "converter.h"
 
 #include "cli.h"
+#include "controller.h"
 #include "pwm.h"
 
 struct converter_model
@@ -39,7 +42,7 @@ float u[INPUTS_NUM][1]                = {{0.0f}};
 float y[OUTPUTS_NUM][1]               = {{0.0f}};
 
 static converter_type_t converter_type = DC_DC_IDEAL;
-static mode_t current_mode             = IDLE;
+static converter_mode_t current_mode   = IDLE;
 
 // clang-format off
 // State-space matrices definitions
@@ -122,27 +125,49 @@ void converter_set_type(converter_type_t type)
         // converter type.
 }
 
-mode_t converter_get_mode(void)
+converter_mode_t converter_get_mode(void)
 {
         return current_mode;
 }
 
-void converter_set_mode(mode_t mode)
+void converter_set_mode(converter_mode_t mode)
 {
-        current_mode = mode;
-
-        // Confgiure mode LEDs.
-        cli_configure_mode_LEDs(mode);
-        // Configure terminal text color.
-        cli_configure_text_color(mode);
-
         if (mode == IDLE || mode == CONFIG)
         {
+                /*
+                 * Stop updating the control loop, and converter state
+                 * vector by disabling timer 2 interrupt.
+                 */
+                NVIC_DisableIRQ(TIM2_IRQn);
+
+                // Clear PID controller integral accumulative term.
+                pid_clear_integrator(&pid);
+
+                // Set plant's input and output to 0
+                u[0][0] = 0.0f;
+                y[0][0] = 0.0f;
+                // Set state vector to 0 by reseting converter state vector.
+                converter_init(&plant);
+
+                // Turn off TIM2 PWM so that green LED turns off.
                 pwm_tim2_set_duty(0.0f);
                 pwm_tim2_disable();
         }
         else
         {
+                /*
+                 * Start updating the control loop and converter state
+                 * vector in modulation mode by enabling timer 2 interrupt.
+                 */
+                NVIC_EnableIRQ(TIM2_IRQn);
+
+                // Turn on TIM2 PWM so that green LED turns on.
                 pwm_tim2_enable();
         }
+
+        current_mode = mode;
+        // Confgiure mode LEDs.
+        cli_configure_mode_LEDs(current_mode);
+        // Configure terminal text color.
+        cli_configure_text_color(current_mode);
 }

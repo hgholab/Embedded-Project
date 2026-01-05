@@ -12,7 +12,7 @@ typedef enum
         IDLE,
         CONFIG,
         MOD
-} mode_t;
+} converter_mode_t;
 
 typedef enum
 {
@@ -36,7 +36,7 @@ void converter_init(converter model);
 void converter_update(converter model, const float u[INPUTS_NUM][1], float y[OUTPUTS_NUM][1]);
 converter_type_t converter_get_type(void);
 void converter_set_type(converter_type_t type);
-mode_t converter_get_mode(void);
-void converter_set_mode(mode_t mode);
+converter_mode_t converter_get_mode(void);
+void converter_set_mode(converter_mode_t mode);
 
 #endif

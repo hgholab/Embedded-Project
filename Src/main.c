@@ -20,7 +20,7 @@
 
 int main(void)
 {
-        uint32_t timer2_freq = 25UL;
+        uint32_t timer2_freq = 100UL;
         uint32_t timer3_freq = 50UL;
 
         // Initialization phase

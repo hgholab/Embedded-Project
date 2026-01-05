@@ -20,8 +20,8 @@
  */
 
 #include <ctype.h>
-#include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -60,15 +60,18 @@ typedef struct
         bool has_one_arg;
 } cli_command_t;
 
-static volatile bool cli_stream_is_on = false;
+bool cli_uart_is_in_config       = false;
+bool cli_button_is_disabled      = false;
+uint32_t cli_uart_block_until_ms = 0U;
+volatile bool cli_stream_is_on   = false;
+
 static uint8_t cli_buffer[CLI_BUFFER_LEN];
-static ui_owner_t ui_owner = BOTH;
 
 static int cli_show_help_and_notes_handler(command_t command);
 static int cli_execute_command(command_t command);
 static void cli_show_help_and_notes(void);
 static int cli_show_status_handler(command_t command);
-static int cli_set_mode_handler(command_t command);
+static int cli_uart_set_mode_handler(command_t command);
 static int cli_set_type_handler(command_t command);
 static int cli_stream_handler(command_t);
 static int cli_set_kp_handler(command_t command);
@@ -78,13 +81,18 @@ static int cli_set_ref_handler(command_t command);
 static int cli_exit_command_handler(command_t command);
 static command_t cli_tokenize_command(uint8_t *cmd_str);
 static void cli_show_startup_menu(void);
-static void cli_show_system_status(
-        mode_t mode, converter_type_t type, float kp, float ki, float kd, float reference);
+static void cli_show_system_status(converter_mode_t mode,
+                                   converter_type_t type,
+                                   float kp,
+                                   float ki,
+                                   float kd,
+                                   float reference);
 static void cli_show_config_menu(void);
+static void cli_print_mode_change_message(converter_mode_t mode);
 
 static const cli_command_t cli_command_table[] = {{"help", cli_show_help_and_notes_handler, true},
                                                   {"status", cli_show_status_handler, true},
-                                                  {"mode", cli_set_mode_handler, false},
+                                                  {"mode", cli_uart_set_mode_handler, false},
                                                   {"type", cli_set_type_handler, false},
                                                   {"stream", cli_stream_handler, true},
                                                   {"kp", cli_set_kp_handler, false},
@@ -110,8 +118,8 @@ void cli_process_rx_byte(void)
         // A button press while stream is on stops the stream.
         if (cli_stream_is_on)
         {
-                systick_disable_interrupt();
                 cli_stream_is_on = false;
+                print_counter    = 0U;
                 terminal_insert_new_line();
                 terminal_print_arrow();
         }
@@ -144,6 +152,47 @@ void cli_process_rx_byte(void)
         }
 }
 
+/*
+ * Although the push button does not really belong to CLI, but this file and this name is the most
+ * appropriate choice for it.
+ */
+void cli_button_handler(void)
+{
+        if (cli_button_is_disabled)
+                return;
+        if (cli_uart_is_in_config)
+        {
+                terminal_insert_new_line();
+                printf("  Config mode is entered via UART. Button cannot change the mode now.");
+                terminal_insert_new_line();
+                terminal_print_arrow();
+                return;
+        }
+        if (!cli_uart_is_in_config)
+        {
+                converter_mode_t current_mode = converter_get_mode();
+                converter_mode_t next_mode;
+
+                switch (current_mode)
+                {
+                case IDLE:
+                        next_mode = CONFIG;
+                        break;
+                case CONFIG:
+                        next_mode = MOD;
+
+                        break;
+                case MOD:
+                        next_mode = IDLE;
+                        break;
+                }
+                converter_set_mode(next_mode);
+                terminal_insert_new_line();
+                cli_print_mode_change_message(next_mode);
+                cli_uart_block_until_ms = systick_get_ticks() + 5000UL;
+        }
+}
+
 /**
  * The following LED colors represent each mode:
  * - blue: idle
@@ -156,7 +205,7 @@ void cli_process_rx_byte(void)
  * H-brdige switches and LEDs. Nevertheless, even in the basic task, we have to
  * use the PID controller output to make the PWM signal for the green LEDs.
  */
-void cli_configure_mode_LEDs(mode_t mode)
+void cli_configure_mode_LEDs(converter_mode_t mode)
 {
         switch (mode)
         {
@@ -179,7 +228,7 @@ void cli_configure_mode_LEDs(mode_t mode)
         }
 }
 
-void cli_configure_text_color(mode_t mode)
+void cli_configure_text_color(converter_mode_t mode)
 {
         switch (mode)
         {
@@ -197,16 +246,6 @@ void cli_configure_text_color(mode_t mode)
                 terminal_set_text_color(TERM_COLOR_WHITE);
                 break;
         }
-}
-
-void cli_set_ui_owner(ui_owner_t owner)
-{
-        ui_owner = owner;
-}
-
-ui_owner_t cli_get_ui_owner(void)
-{
-        return ui_owner;
 }
 
 /*
@@ -341,7 +380,7 @@ static int cli_show_status_handler(command_t command)
         float ki              = pid_get_ki(&pid);
         float kd              = pid_get_kd(&pid);
         float ref             = pid_get_ref(&pid);
-        mode_t mode           = converter_get_mode();
+        converter_mode_t mode = converter_get_mode();
         converter_type_t type = converter_get_type();
 
         cli_show_system_status(mode, type, kp, ki, kd, ref);
@@ -349,68 +388,51 @@ static int cli_show_status_handler(command_t command)
         return 0;
 }
 
-static int cli_set_mode_handler(command_t command)
+static int cli_uart_set_mode_handler(command_t command)
 {
+        if (systick_get_ticks() < cli_uart_block_until_ms)
+        {
+                printf("  UART cannot change the mode right now! Try again in a few seconds.");
+                terminal_insert_new_line();
+                terminal_print_arrow();
+                return -1;
+        }
+
         if (strcmp("idle", command.argv[1]) == 0 || strcmp("config", command.argv[1]) == 0 ||
             strcmp("mod", command.argv[1]) == 0)
         {
-                mode_t mode;
+                converter_mode_t mode;
 
                 if (strcmp("idle", command.argv[1]) == 0)
+                {
                         mode = IDLE;
+                }
                 else if (strcmp("config", command.argv[1]) == 0)
+                {
                         mode = CONFIG;
+                }
                 else
+                {
                         mode = MOD;
+                }
 
                 if (converter_get_mode() != mode) // Converter mode has changed
                 {
-                        converter_set_mode(mode);
-
-                        if (mode == IDLE || mode == CONFIG)
+                        if (mode == CONFIG)
                         {
-                                /*
-                                 * Stop updating the control loop, and converter state
-                                 * variables by disabling timer 2 interrupt.
-                                 */
-                                NVIC_DisableIRQ(TIM2_IRQn);
-
-                                // Clear PID controller integral accumulative term.
-                                pid_clear_integrator(&pid);
-
-                                // Set plant's input and output to 0
-                                u[0][0] = 0.0f;
-                                y[0][0] = 0.0f;
-                                // Set state vector to 0 by reseting converter state vector.
-                                converter_init(&plant);
-
-                                if (mode == CONFIG)
-                                {
-                                        cli_show_config_menu();
-                                }
+                                // Going into config mode by uart disables the
+                                // button.
+                                cli_button_is_disabled = true;
+                                cli_uart_is_in_config  = true;
                         }
                         else
                         {
-                                NVIC_EnableIRQ(TIM2_IRQn);
+                                cli_button_is_disabled = false;
+                                cli_uart_is_in_config  = false;
                         }
 
-                        printf("  In %s mode. ", modes[mode]);
-
-                        switch (mode)
-                        {
-                        case IDLE:
-                                printf("Converter is off.");
-                                break;
-                        case CONFIG:
-                                printf("You can configure the controller.");
-                                break;
-                        case MOD:
-                                printf("The converter is operating.");
-                                break;
-                        }
-
-                        terminal_insert_new_line();
-                        terminal_print_arrow();
+                        converter_set_mode(mode);
+                        cli_print_mode_change_message(mode);
                         return 0;
                 }
 
@@ -549,7 +571,7 @@ static int cli_set_kd_handler(command_t command)
 
 static int cli_set_ref_handler(command_t command)
 {
-        mode_t current_mode = converter_get_mode();
+        converter_mode_t current_mode = converter_get_mode();
 
         // Reference can only be changed in config and mod modes.
         if (current_mode == CONFIG || converter_get_mode() == MOD)
@@ -598,7 +620,8 @@ static int cli_exit_command_handler(command_t command)
         if (converter_get_mode() == CONFIG)
         {
                 command_t dummy_command = {.argc = 2, .argv = {"mode", "idle"}};
-                cli_set_mode_handler(dummy_command);
+                cli_uart_set_mode_handler(dummy_command);
+                cli_button_is_disabled = false;
                 return 0;
         }
         else
@@ -665,7 +688,7 @@ static void cli_show_startup_menu(void)
 }
 
 static void cli_show_system_status(
-        mode_t mode, converter_type_t type, float kp, float ki, float kd, float reference)
+        converter_mode_t mode, converter_type_t type, float kp, float ki, float kd, float reference)
 {
         printf("  System Status");
         terminal_insert_new_line();
@@ -688,6 +711,7 @@ static void cli_show_system_status(
 
 static void cli_show_config_menu(void)
 {
+        terminal_insert_new_line();
         printf("  Available commands in this mode");
         terminal_insert_new_line();
         printf(SEPERATOR_2);
@@ -701,7 +725,6 @@ static void cli_show_config_menu(void)
         printf("  kd <value>            - Set derivative gain");
         terminal_insert_new_line();
         printf("  ref <value>           - Set reference value");
-        terminal_insert_new_line();
 }
 
 static void cli_show_help_and_notes(void)
@@ -762,4 +785,26 @@ static void cli_show_help_and_notes(void)
         terminal_insert_new_line();
         printf("  - Type \"help\" at any time to reprint this summary.");
         terminal_insert_new_line();
+}
+
+static void cli_print_mode_change_message(converter_mode_t mode)
+{
+        printf("  In %s mode. ", modes[mode]);
+
+        switch (mode)
+        {
+        case IDLE:
+                printf("Converter is off.");
+                break;
+        case CONFIG:
+                printf("You can configure the controller.");
+                cli_show_config_menu();
+                break;
+        case MOD:
+                printf("The converter is operating.");
+                break;
+        }
+
+        terminal_insert_new_line();
+        terminal_print_arrow();
 }

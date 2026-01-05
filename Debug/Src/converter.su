@@ -1,6 +1,8 @@
-../Src/converter.c:61:6:converter_init	24	static
-../Src/converter.c:67:6:converter_update	88	static
-../Src/converter.c:112:18:converter_get_type	4	static
-../Src/converter.c:117:6:converter_set_type	16	static
-../Src/converter.c:125:8:converter_get_mode	4	static
-../Src/converter.c:130:6:converter_set_mode	16	static
+C:/Users/hgholab/OneDrive/Source Code/Embedded Systems/Modules/Final_Project/chip_headers/CMSIS/Include/core_cm4.h:1684:22:__NVIC_EnableIRQ	16	static,ignoring_inline_asm
+C:/Users/hgholab/OneDrive/Source Code/Embedded Systems/Modules/Final_Project/chip_headers/CMSIS/Include/core_cm4.h:1722:22:__NVIC_DisableIRQ	16	static,ignoring_inline_asm
+../Src/converter.c:64:6:converter_init	24	static
+../Src/converter.c:70:6:converter_update	88	static
+../Src/converter.c:115:18:converter_get_type	4	static
+../Src/converter.c:120:6:converter_set_type	16	static
+../Src/converter.c:128:18:converter_get_mode	4	static
+../Src/converter.c:133:6:converter_set_mode	16	static

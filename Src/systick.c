@@ -18,6 +18,7 @@
 
 #include "systick.h"
 
+#include "cli.h"
 #include "clock.h"
 #include "controller.h"
 #include "converter.h"
@@ -27,10 +28,11 @@
 // SysTick frequency in Hz
 #define SYSTICK_FREQUENCY 1000UL
 
+// print_counter counts the printed lines in terminal, so we clean it after 100 prints.
+volatile uint16_t print_counter = 0U;
+
 // systick_ticks is incremented SYSTICK_FREQUENCY times every second in SysTick_Handler ISR.
 static volatile uint32_t systick_ticks = 0UL;
-// print_counter counts the printed lines in terminal, so we clean it after 100 prints.
-static volatile uint16_t print_counter = 0U;
 
 static void systick_set_freq(uint32_t systick_clock, uint32_t systick_freq);
 
@@ -45,7 +47,8 @@ static void systick_set_freq(uint32_t systick_clock, uint32_t systick_freq);
 void SysTick_Handler(void)
 {
         systick_ticks++;
-        ready_flag_word |= TASK3;
+
+        atomic_fetch_or(&ready_flag_word, TASK3);
 }
 
 void systick_init(systick_clock_source_t systick_clock_source, bool enable_interrupt)
@@ -94,7 +97,7 @@ void systick_enable_interrupt(void)
 void systick_print_output(void)
 {
         // Every 500ms, print the output voltage of the converter and reference value.
-        if (systick_ticks == 500UL)
+        if (systick_ticks % 500UL == 0 && cli_stream_is_on)
         {
                 printf("Output Voltage: %05.2f V", y[0][0]);
                 terminal_insert_new_line();
@@ -108,6 +111,11 @@ void systick_print_output(void)
                         terminal_clear();
                 }
         }
+}
+
+uint32_t systick_get_ticks(void)
+{
+        return systick_ticks;
 }
 
 // This function sets the frequency and enables the SysTick timer.

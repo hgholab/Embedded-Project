@@ -5,6 +5,7 @@
 
 #include "timer.h"
 
+#include "cli.h"
 #include "clock.h"
 #include "controller.h"
 #include "converter.h"
@@ -21,15 +22,19 @@
 // TIM2 update event interrupt is used for updating the control loop and providing pwm for the LED.
 void TIM2_IRQHandler(void)
 {
+        // Clear UIF flag.
         TIM2->SR &= ~TIM_SR_UIF;
-        ready_flag_word |= TASK0;
+
+        atomic_fetch_or(&ready_flag_word, TASK0);
 }
 
 // TIM3 update event interrupt is used for button debounce.
 void TIM3_IRQHandler(void)
 {
+        // Clear UIF flag.
         TIM3->SR &= ~TIM_SR_UIF;
-        ready_flag_word |= TASK2;
+
+        atomic_fetch_or(&ready_flag_word, TASK2);
 }
 
 void tim2_init(uint32_t timer_freq)
@@ -177,14 +182,11 @@ void tim2_update_loop(void)
 
 void tim3_read_button(void)
 {
-        // Clear UIF.
-        TIM3->SR &= ~TIM_SR_UIF;
-
         // Detect change in button status to register it as one button press.
         bool button_is_pressed = gpio_button_is_pressed();
         if (button_is_pressed && !button_last_push_status)
         {
-                // button_push_flag = true;
+                cli_button_handler();
         }
         button_last_push_status = button_is_pressed;
 }

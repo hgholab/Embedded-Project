@@ -1,4 +1,6 @@
-#include <stdbool.h>
+#include <stddef.h>
+
+#include "stm32f4xx.h"
 
 #include "scheduler.h"
 
@@ -10,7 +12,7 @@
 
 typedef void (*task_handler)(void);
 
-volatile uint32_t ready_flag_word;
+_Atomic uint32_t ready_flag_word;
 
 static task_handler task_arr[TASKS_NUM];
 
@@ -25,25 +27,25 @@ void scheduler_init(void)
 // This function implements a prioritized scheduler.
 void scheduler_run(void)
 {
-        bool task_exist = false;
         for (;;)
         {
-                task_handler task;
-                uint8_t p; // task priority
-                for (p = 0U; p < TASKS_NUM; p++)
+                task_handler task = NULL;
+                for (uint8_t p = 0U; p < TASKS_NUM; p++) // p is task priority
                 {
+                        __disable_irq();
                         if (ready_flag_word & (1UL << p))
                         {
                                 ready_flag_word &= ~(1UL << p);
-                                task       = task_arr[p];
-                                task_exist = true;
+                                __enable_irq();
+
+                                task = task_arr[p];
                                 break;
                         }
+                        __enable_irq();
                 }
-                if (task_exist)
+                if (task != NULL)
                 {
                         (*task)();
-                        task_exist = false;
                 }
         }
 }

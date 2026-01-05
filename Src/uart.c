@@ -33,7 +33,8 @@ static uint32_t uart2_calc_brr(const uint32_t clock_freq, const uint32_t baud_ra
 void USART2_IRQHandler(void)
 {
         uart_read_char = (uint8_t)(USART2->DR & 0xFF);
-        ready_flag_word |= TASK1;
+
+        atomic_fetch_or(&ready_flag_word, TASK1);
 }
 
 /*

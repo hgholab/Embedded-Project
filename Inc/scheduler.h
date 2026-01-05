@@ -1,6 +1,7 @@
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
+#include <stdatomic.h>
 #include <stdint.h>
 
 enum
@@ -11,7 +12,7 @@ enum
         TASK3 = (1UL << 3U)  // output print task (SysTick)
 };
 
-extern volatile uint32_t ready_flag_word;
+extern _Atomic uint32_t ready_flag_word;
 
 void scheduler_init(void);
 void scheduler_run(void);
