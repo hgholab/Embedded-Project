@@ -2,6 +2,7 @@
 #define CLOCK_H
 
 // Clock values used for this project.
+#define LSI_CLK      32000UL
 #define HSI_CLK      16000000UL
 #define HSE_CLK      8000000UL
 #define SYSCLK       100000000UL

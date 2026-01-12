@@ -72,6 +72,9 @@ typedef enum
         GPIO_PUPD_PULL_DOWN
 } gpio_pupd_t;
 
+// This variable shows previous state of button being pushed or not (stable state).
+bool button_last_push_status = false;
+
 static uint32_t const gpio_port_rcc_ahb1_en[]       = {RCC_AHB1ENR_GPIOAEN,
                                                        RCC_AHB1ENR_GPIOBEN,
                                                        RCC_AHB1ENR_GPIOCEN,
@@ -79,9 +82,6 @@ static uint32_t const gpio_port_rcc_ahb1_en[]       = {RCC_AHB1ENR_GPIOAEN,
                                                        RCC_AHB1ENR_GPIOEEN,
                                                        RCC_AHB1ENR_GPIOHEN};
 static GPIO_TypeDef *const gpio_port_base_address[] = {GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOH};
-
-// This variable shows previous state of button being pushed or not (stable state).
-bool button_last_push_status = false;
 
 static void gpio_enable_port_clock(gpio_port_t port);
 static void gpio_set_pin_mode(gpio_port_t port, gpio_pin_t pin, gpio_pin_mode_t mode);
@@ -156,16 +156,19 @@ bool gpio_read_pin_input(gpio_port_t port, gpio_pin_t pin)
         return (gpio_port_base_address[port]->IDR & (1UL << pin)) != 0;
 }
 
-// This function handles push-button bounce. It is called every 20 ms by TIM3 interrupt.
+/*
+ * This function handles push-button bounce. It is called by tim3_read_button function in timer.c
+ * which in turn is called every 20 ms by TIM3 interrupt.
+ */
 bool gpio_button_is_pressed(void)
 {
         // This variable shows previous state of button being pushed or not (instantaneous state).
-        static bool prev = false;
+        static bool button_previous_state = false;
 
         // Push button is active low.
         bool button_is_pressed   = !gpio_read_pin_input(GPIO_PORT_C, GPIO_PIN_13);
-        bool reading_is_reliable = (button_is_pressed == prev);
-        prev                     = button_is_pressed;
+        bool reading_is_reliable = (button_is_pressed == button_previous_state);
+        button_previous_state    = button_is_pressed;
 
         if (!reading_is_reliable)
         {

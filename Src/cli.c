@@ -60,12 +60,12 @@ typedef struct
         bool has_one_arg;
 } cli_command_t;
 
-bool cli_uart_is_in_config       = false;
-bool cli_button_is_disabled      = false;
-uint32_t cli_uart_block_until_ms = 0U;
-volatile bool cli_stream_is_on   = false;
+volatile bool cli_stream_is_on = false;
 
+static bool cli_config_is_entered_via_uart = false;
+static uint32_t cli_uart_block_until_ms    = 0U;
 static uint8_t cli_buffer[CLI_BUFFER_LEN];
+static int cli_cmd_line_index = 0;
 
 static int cli_show_help_and_notes_handler(command_t command);
 static int cli_execute_command(command_t command);
@@ -104,22 +104,17 @@ static const cli_command_t cli_command_table[] = {{"help", cli_show_help_and_not
 void cli_init(void)
 {
         cli_show_startup_menu();
-
-        // Set the mode to idle at startup.
-        converter_set_mode(IDLE);
 }
 
 void cli_process_rx_byte(void)
 {
         uint8_t ch = uart_read_char;
 
-        static int cmd_line_index = 0;
-
         // A button press while stream is on stops the stream.
         if (cli_stream_is_on)
         {
-                cli_stream_is_on = false;
-                print_counter    = 0U;
+                cli_stream_is_on      = false;
+                systick_print_counter = 0U;
                 terminal_insert_new_line();
                 terminal_print_arrow();
         }
@@ -128,24 +123,24 @@ void cli_process_rx_byte(void)
                 if (ch == '\r' || ch == '\n')
                 {
                         terminal_insert_new_line();
-                        cli_buffer[cmd_line_index] = '\0';
-                        command_t command          = cli_tokenize_command(cli_buffer);
+                        cli_buffer[cli_cmd_line_index] = '\0';
+                        command_t command              = cli_tokenize_command(cli_buffer);
                         cli_execute_command(command);
-                        cmd_line_index = 0;
+                        cli_cmd_line_index = 0;
                 }
                 else if (ch == '\b')
                 {
-                        if (cmd_line_index != 0)
+                        if (cli_cmd_line_index != 0)
                         {
-                                cmd_line_index--;
+                                cli_cmd_line_index--;
                                 printf("\b \b");
                         }
                 }
                 else
                 {
-                        if (cmd_line_index < CLI_BUFFER_LEN - 1)
+                        if (cli_cmd_line_index < CLI_BUFFER_LEN - 1)
                         {
-                                cli_buffer[cmd_line_index++] = ch;
+                                cli_buffer[cli_cmd_line_index++] = ch;
                                 printf("%c", ch);
                         }
                 }
@@ -158,17 +153,24 @@ void cli_process_rx_byte(void)
  */
 void cli_button_handler(void)
 {
-        if (cli_button_is_disabled)
-                return;
-        if (cli_uart_is_in_config)
+        // Clear current line of the user command which was interrupted by button press.
+        for (int i = 0; i < cli_cmd_line_index; i++)
         {
-                terminal_insert_new_line();
+                printf("\b \b");
+        }
+        printf("The push button is pressed.");
+        terminal_insert_new_line();
+
+        // Reset command line buffer.
+        cli_cmd_line_index = 0;
+
+        if (cli_config_is_entered_via_uart)
+        {
                 printf("  Config mode is entered via UART. Button cannot change the mode now.");
                 terminal_insert_new_line();
                 terminal_print_arrow();
-                return;
         }
-        if (!cli_uart_is_in_config)
+        if (!cli_config_is_entered_via_uart)
         {
                 converter_mode_t current_mode = converter_get_mode();
                 converter_mode_t next_mode;
@@ -302,7 +304,6 @@ static int cli_execute_command(command_t command)
          */
         if (command.argc == 0)
         {
-                printf("  You did not enter a command! Try again.");
                 terminal_insert_new_line();
                 terminal_print_arrow();
                 return -1;
@@ -376,10 +377,10 @@ static int cli_show_help_and_notes_handler(command_t command)
 
 static int cli_show_status_handler(command_t command)
 {
-        float kp              = pid_get_kp(&pid);
-        float ki              = pid_get_ki(&pid);
-        float kd              = pid_get_kd(&pid);
-        float ref             = pid_get_ref(&pid);
+        float kp              = pid_get_kp();
+        float ki              = pid_get_ki();
+        float kd              = pid_get_kd();
+        float ref             = pid_get_ref();
         converter_mode_t mode = converter_get_mode();
         converter_type_t type = converter_get_type();
 
@@ -422,13 +423,11 @@ static int cli_uart_set_mode_handler(command_t command)
                         {
                                 // Going into config mode by uart disables the
                                 // button.
-                                cli_button_is_disabled = true;
-                                cli_uart_is_in_config  = true;
+                                cli_config_is_entered_via_uart = true;
                         }
                         else
                         {
-                                cli_button_is_disabled = false;
-                                cli_uart_is_in_config  = false;
+                                cli_config_is_entered_via_uart = false;
                         }
 
                         converter_set_mode(mode);
@@ -502,12 +501,11 @@ static int cli_stream_handler(command_t)
         if (converter_get_mode() == MOD)
         {
                 cli_stream_is_on = true;
-                systick_enable_interrupt();
                 return 0;
         }
         else
         {
-                printf("Stream cannot be turned on in %s mode! Try again.",
+                printf("  Stream cannot be turned on in %s mode! Try again.",
                        modes[converter_get_mode()]);
                 terminal_insert_new_line();
                 terminal_print_arrow();
@@ -519,14 +517,13 @@ static int cli_set_kp_handler(command_t command)
 {
         if (converter_get_mode() == CONFIG)
         {
-                pid_set_kp(&pid, str_to_float(command.argv[1]));
-                terminal_insert_new_line();
+                pid_set_kp(str_to_float(command.argv[1]));
                 terminal_print_arrow();
                 return 0;
         }
         else
         {
-                printf("You can modify kp only in config mode! Try again.");
+                printf("  You can modify kp only in config mode! Try again.");
                 terminal_insert_new_line();
                 terminal_print_arrow();
                 return -1;
@@ -537,14 +534,13 @@ static int cli_set_ki_handler(command_t command)
 {
         if (converter_get_mode() == CONFIG)
         {
-                pid_set_ki(&pid, str_to_float(command.argv[1]));
-                terminal_insert_new_line();
+                pid_set_ki(str_to_float(command.argv[1]));
                 terminal_print_arrow();
                 return 0;
         }
         else
         {
-                printf("You can modify ki only in config mode! Try again.");
+                printf("  You can modify ki only in config mode! Try again.");
                 terminal_insert_new_line();
                 terminal_print_arrow();
                 return -1;
@@ -555,14 +551,13 @@ static int cli_set_kd_handler(command_t command)
 {
         if (converter_get_mode() == CONFIG)
         {
-                pid_set_kd(&pid, str_to_float(command.argv[1]));
-                terminal_insert_new_line();
+                pid_set_kd(str_to_float(command.argv[1]));
                 terminal_print_arrow();
                 return 0;
         }
         else
         {
-                printf("You can modify kd only in config mode! Try again.");
+                printf("  You can modify kd only in config mode! Try again.");
                 terminal_insert_new_line();
                 terminal_print_arrow();
                 return -1;
@@ -574,20 +569,20 @@ static int cli_set_ref_handler(command_t command)
         converter_mode_t current_mode = converter_get_mode();
 
         // Reference can only be changed in config and mod modes.
-        if (current_mode == CONFIG || converter_get_mode() == MOD)
+        if (current_mode == CONFIG || current_mode == MOD)
         {
                 float ref = str_to_float(command.argv[1]);
 
                 if (ref > REF_MAX)
                 {
-                        printf("The reference cannot be higher than %05.2f and is now "
+                        printf("  The reference cannot be higher than %05.2f and is now "
                                "%05.2f.",
                                REF_MAX,
                                REF_MAX);
                 }
                 else if (ref < -1.0f * REF_MAX)
                 {
-                        printf("The reference cannot be lower than %05.2f and is now "
+                        printf("  The reference cannot be lower than %05.2f and is now "
                                "%05.2f.",
                                -1.0f * REF_MAX,
                                -1.0f * REF_MAX);
@@ -595,14 +590,13 @@ static int cli_set_ref_handler(command_t command)
 
                 // The reference value is then limited between -REF_MAX and REF_MAX.
                 ref = CLAMP(ref, -1.0f * REF_MAX, REF_MAX);
-                pid_set_ref(&pid, ref);
-                terminal_insert_new_line();
+                pid_set_ref(ref);
                 terminal_print_arrow();
                 return 0;
         }
         else
         {
-                printf("You cannot modify ref in idle mode! Try again.");
+                printf("  You cannot modify ref in idle mode! Try again.");
                 terminal_insert_new_line();
                 terminal_print_arrow();
                 return -1;
@@ -621,12 +615,12 @@ static int cli_exit_command_handler(command_t command)
         {
                 command_t dummy_command = {.argc = 2, .argv = {"mode", "idle"}};
                 cli_uart_set_mode_handler(dummy_command);
-                cli_button_is_disabled = false;
+                cli_config_is_entered_via_uart = false;
                 return 0;
         }
         else
         {
-                printf("The \"exit\" command only works in config mode! Try again.");
+                printf("  The \"exit\" command only works in config mode! Try again.");
                 terminal_insert_new_line();
                 terminal_print_arrow();
                 return -1;
@@ -672,16 +666,13 @@ static void cli_show_startup_menu(void)
 
         cli_show_system_status(converter_get_mode(),
                                converter_get_type(),
-                               pid_get_kp(&pid),
-                               pid_get_ki(&pid),
-                               pid_get_kd(&pid),
-                               pid_get_ref(&pid));
-
-        terminal_insert_new_line();
+                               pid_get_kp(),
+                               pid_get_ki(),
+                               pid_get_kd(),
+                               pid_get_ref());
 
         cli_show_help_and_notes();
 
-        terminal_insert_new_line();
         terminal_insert_new_line();
 
         terminal_print_arrow();
@@ -707,10 +698,12 @@ static void cli_show_system_status(
         printf("  reference     : %-11.6f", reference);
 
         terminal_insert_new_line();
+        terminal_insert_new_line();
 }
 
 static void cli_show_config_menu(void)
 {
+        terminal_insert_new_line();
         terminal_insert_new_line();
         printf("  Available commands in this mode");
         terminal_insert_new_line();
@@ -725,6 +718,12 @@ static void cli_show_config_menu(void)
         printf("  kd <value>            - Set derivative gain");
         terminal_insert_new_line();
         printf("  ref <value>           - Set reference value");
+        terminal_insert_new_line();
+        terminal_insert_new_line();
+        printf("  Note: ref refers to the output desired DC value for DC-DC types, ");
+        terminal_insert_new_line();
+        printf("  and output desired sinusoidal amplitude for inverter types.");
+        terminal_insert_new_line();
 }
 
 static void cli_show_help_and_notes(void)
@@ -735,25 +734,23 @@ static void cli_show_help_and_notes(void)
         terminal_insert_new_line();
         printf("  help                  - Show this help menu");
         terminal_insert_new_line();
-        printf("  status                - Show current mode, kp, ki, kd, and ref");
+        printf("  status                - Show current type, mode, kp, ki, kd, and ref");
         terminal_insert_new_line();
         printf("  type <type_id>        - Switch to the converter type with selected id:");
         terminal_insert_new_line();
-        printf("                        - 0: DC-DC Ideal Bridge");
+        printf("                          0: DC-DC Ideal Bridge");
         terminal_insert_new_line();
-        printf("                        - 1: Inverter Ideal Bridge");
+        printf("                          1: Inverter Ideal Bridge");
         terminal_insert_new_line();
-        printf("                        - 2: DC-DC H-Bridge, and");
+        printf("                          2: DC-DC H-Bridge, and");
         terminal_insert_new_line();
-        printf("                        - 3: Inverter H-Bridge");
+        printf("                          3: Inverter H-Bridge");
         terminal_insert_new_line();
         printf("  mode idle             - Switch to idle mode");
         terminal_insert_new_line();
-        printf("  mode config           - Enter config mode (tune Kp, Ki, kd, and ref)");
+        printf("  mode config           - Enter config mode (tune type, kp, ki, kd, and ref)");
         terminal_insert_new_line();
-        printf("  mode mod              - Enter mod mode (converter in operation) printing "
-               "output "
-               "voltage periodically");
+        printf("  mode mod              - Enter mod mode (converter in operation)");
         terminal_insert_new_line();
         printf("  kp <value>            - Set proportional gain (config mode only)");
         terminal_insert_new_line();
@@ -761,29 +758,24 @@ static void cli_show_help_and_notes(void)
         terminal_insert_new_line();
         printf("  kd <value>            - Set derivative gain (config mode only)");
         terminal_insert_new_line();
-        printf("  ref <voltage>         - Set reference voltage (config and mod mode "
-               "only)");
+        printf("  ref <voltage>         - Set reference voltage (config and mod mode only)");
         terminal_insert_new_line();
         printf("  stream                - Periodically print output voltage");
         terminal_insert_new_line();
-        printf("  exit                  - Leave config mode and release uart semaphore");
+        printf("  exit                  - Leave config mode");
         terminal_insert_new_line();
         terminal_insert_new_line();
         printf("  Notes");
         terminal_insert_new_line();
         printf(SEPERATOR_2);
         terminal_insert_new_line();
-        printf("  - While CLI is printing the output voltage, press any key to stop the "
-               "stream and "
-               "enter a new command.");
+        printf("  - While CLI is printing the output voltage, press any key to stop the stream.");
         terminal_insert_new_line();
-        printf("  - When UART enters CONFIG mode, button is disabled (semaphore taken).");
+        printf("  - When UART enters CONFIG mode, the button is disabled.");
         terminal_insert_new_line();
-        printf("  - After entering config mode by button, uart cannot change the mode for "
-               "5 "
-               "seconds.");
+        printf("  - After changing mode by button, uart cannot change the mode for 5 seconds.");
         terminal_insert_new_line();
-        printf("  - Type \"help\" at any time to reprint this summary.");
+        printf("  - Type \"help\" at any time to reprint this guide menu.");
         terminal_insert_new_line();
 }
 

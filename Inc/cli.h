@@ -5,8 +5,6 @@
 
 #include "converter.h"
 
-extern bool cli_uart_is_in_config;
-extern bool cli_button_is_disabled;
 extern volatile bool cli_stream_is_on;
 
 void cli_init(void);

@@ -1,0 +1,4 @@
+../Src/iwdg.c:20:6:iwdg_init	2
+../Src/iwdg.c:42:6:iwdg_pet_the_dog	1
+../Src/iwdg.c:47:17:iwdg_compute_rlr	2
+../Src/iwdg.c:60:13:iwdg_is_ready	1

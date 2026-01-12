@@ -57,7 +57,7 @@ void pwm_tim2_init(void)
 
 void pwm_tim2_set_duty(float duty)
 {
-        // duty is in percentage (0 - 100)
+        // The duty is in percentage (0 - 100).
         duty         = CLAMP(duty, 0.0f, 100.0f);
         uint32_t arr = TIM2->ARR;
         uint32_t ccr = (uint32_t)(((arr + 1UL) * duty + 50.0f) / 100.0f);

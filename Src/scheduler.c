@@ -5,6 +5,7 @@
 #include "scheduler.h"
 
 #include "cli.h"
+#include "iwdg.h"
 #include "systick.h"
 #include "timer.h"
 
@@ -47,5 +48,7 @@ void scheduler_run(void)
                 {
                         (*task)();
                 }
+
+                iwdg_pet_the_dog();
         }
 }

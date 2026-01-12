@@ -1,0 +1,4 @@
+../Src/iwdg.c:20:6:iwdg_init	16	static
+../Src/iwdg.c:42:6:iwdg_pet_the_dog	4	static
+../Src/iwdg.c:47:17:iwdg_compute_rlr	32	static
+../Src/iwdg.c:60:13:iwdg_is_ready	4	static

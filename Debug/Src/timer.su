@@ -2,9 +2,9 @@ C:/Users/hgholab/OneDrive/Source Code/Embedded Systems/Modules/Final_Project/chi
 C:/Users/hgholab/OneDrive/Source Code/Embedded Systems/Modules/Final_Project/chip_headers/CMSIS/Include/core_cm4.h:1722:22:__NVIC_DisableIRQ	16	static,ignoring_inline_asm
 C:/Users/hgholab/OneDrive/Source Code/Embedded Systems/Modules/Final_Project/chip_headers/CMSIS/Include/core_cm4.h:1775:22:__NVIC_ClearPendingIRQ	16	static
 C:/Users/hgholab/OneDrive/Source Code/Embedded Systems/Modules/Final_Project/chip_headers/CMSIS/Include/core_cm4.h:1814:22:__NVIC_SetPriority	16	static
-../Src/timer.c:23:6:TIM2_IRQHandler	4	static
-../Src/timer.c:32:6:TIM3_IRQHandler	4	static
-../Src/timer.c:40:6:tim2_init	32	static
-../Src/timer.c:82:6:tim3_init	32	static
-../Src/timer.c:124:6:tim2_update_loop	24	static
-../Src/timer.c:183:6:tim3_read_button	16	static
+../Src/timer.c:31:6:TIM2_IRQHandler	4	static
+../Src/timer.c:54:6:TIM3_IRQHandler	4	static
+../Src/timer.c:63:6:tim2_init	24	static
+../Src/timer.c:105:6:tim3_init	32	static
+../Src/timer.c:147:6:tim2_update_loop	40	static
+../Src/timer.c:326:6:tim3_read_button	16	static

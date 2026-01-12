@@ -22,18 +22,18 @@ typedef enum
         INVERTER_H_BRIDGE
 } converter_type_t;
 
-typedef struct converter_model *converter;
-
+extern float converter_ref_dphi;
+extern float converter_ref_phase;
 extern const char *const modes[];
 extern const char *const types[];
 extern const char *const types_id[];
-extern struct converter_model plant;
 extern const float converter_dc_link_voltage;
 extern float u[][1];
 extern float y[][1];
 
-void converter_init(converter model);
-void converter_update(converter model, const float u[INPUTS_NUM][1], float y[OUTPUTS_NUM][1]);
+void converter_init(void);
+void converter_reset_state(void);
+void converter_update(const float u[INPUTS_NUM][1], float y[OUTPUTS_NUM][1]);
 converter_type_t converter_get_type(void);
 void converter_set_type(converter_type_t type);
 converter_mode_t converter_get_mode(void);

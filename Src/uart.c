@@ -16,6 +16,7 @@
  *     - USART2_IRQHandler handles RXNE interrupts for character reception.
  *     - printf is retargeted to UART by using uart2_write_char_blocking.
  */
+#include <stdatomic.h>
 
 #include "stm32f4xx.h"
 
@@ -34,6 +35,7 @@ void USART2_IRQHandler(void)
 {
         uart_read_char = (uint8_t)(USART2->DR & 0xFF);
 
+        // Atomic modification of ready_flag_word to prevent race conditions.
         atomic_fetch_or(&ready_flag_word, TASK1);
 }
 

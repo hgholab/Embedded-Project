@@ -1,1 +1,5 @@
-../Src/sine_lut.c:28:6:sine_lut_init	16	static
+../Src/sine_lut.c:33:6:sine_lut_init	16	static
+../Src/sine_lut.c:42:7:sine_lut_value	16	static
+../Src/sine_lut.c:47:6:sine_lut_reset_ref_index	4	static
+../Src/sine_lut.c:52:6:sine_lut_increment_ref_index	4	static
+../Src/sine_lut.c:58:8:sine_lut_get_ref_index	4	static

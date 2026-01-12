@@ -10,10 +10,12 @@
  *
  * Notes:
  *     - State vector is stored inside the model instance.
- *     - converter_init() zeros the state.
+ *     - converter_init() zeros the state and set the type to DC-DC ideal.
+ *     - converter_reset_state() zeros the state.
  *     - converter_update() performs one simulation step.
  */
 
+#include <stdatomic.h>
 #include <stddef.h>
 
 #include "stm32f4xx.h"
@@ -23,12 +25,20 @@
 #include "cli.h"
 #include "controller.h"
 #include "pwm.h"
+#include "scheduler.h"
+#include "utils.h"
+
+#define SAMPLING_FREQUENCY 50000.0f
+#define SINE_FREQUENCY     50.0f
 
 struct converter_model
 {
         float x[STATES_NUM][1];
 };
-struct converter_model plant;
+
+// Phase change for reference in one time-step.
+float converter_ref_dphi  = 2.0f * PI * SINE_FREQUENCY * (1.0f / SAMPLING_FREQUENCY);
+float converter_ref_phase = 0.0f; // Reference phase at each instant.
 
 const char *const modes[MODES_NUM] = {"idle", "config", "mod"};
 const char *const types[TYPES_NUM] = {
@@ -41,6 +51,7 @@ float u[INPUTS_NUM][1]                = {{0.0f}};
 // Initialize plant output voltage marked U_3 in assignment description.
 float y[OUTPUTS_NUM][1]               = {{0.0f}};
 
+static struct converter_model plant;
 static converter_type_t converter_type = DC_DC_IDEAL;
 static converter_mode_t current_mode   = IDLE;
 
@@ -54,31 +65,45 @@ static const float Ad[STATES_NUM][STATES_NUM] = {
         {0.7648f, -0.4165f, -0.4855f, -0.3366f, -0.0986f,  0.7281f},
         {1.1056f,  0.7587f, -0.1179f,  0.0748f, -0.2192f,  0.1491f},
 };
-// clang-format on
-static const float Bd[STATES_NUM][INPUTS_NUM] = {
-        {0.0471f}, {0.0377f}, {0.4040f}, {0.0485f}, {0.0373f}, {0.0539f}};
+static const float Bd[STATES_NUM][INPUTS_NUM] = {{0.0471f},
+                                                 {0.0377f}, 
+                                                 {0.4040f}, 
+                                                 {0.0485f}, 
+                                                 {0.0373f}, 
+                                                 {0.0539f}};
 static const float Cd[OUTPUTS_NUM][STATES_NUM] = {{0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f}};
 static const float Dd[OUTPUTS_NUM][INPUTS_NUM] = {{0.0f}};
+// clang-format on
 
-// Initialize a converter model with state vector of zero.
-void converter_init(converter model)
+/*
+ * This function initialize a converter model with the state vector of zero and set the type to
+ * DC-DC ideal and mode to idle.
+ */
+void converter_init(void)
 {
-        for (size_t i = 0; i < STATES_NUM; i++)
-                (model->x)[i][0] = 0.0f;
+        converter_reset_state();
+        converter_set_type(DC_DC_IDEAL);
+        converter_set_mode(IDLE);
 }
 
-void converter_update(converter model, float const u[INPUTS_NUM][1], float y[OUTPUTS_NUM][1])
+void converter_reset_state(void)
+{
+        for (size_t i = 0; i < STATES_NUM; i++)
+                (plant.x)[i][0] = 0.0f;
+}
+
+void converter_update(float const u[INPUTS_NUM][1], float y[OUTPUTS_NUM][1])
 {
         float x_next[STATES_NUM][1];
 
-        // x_next = Ad * x + Bd * u
+        // x_(n+1) = Ad * x_n + Bd * u_n
         for (size_t i = 0; i < STATES_NUM; i++)
         {
                 float result = 0.0f;
 
                 for (size_t j = 0; j < STATES_NUM; j++)
                 {
-                        result += (Ad[i][j] * model->x[j][0]);
+                        result += (Ad[i][j] * (plant.x)[j][0]);
                 }
                 for (size_t k = 0; k < INPUTS_NUM; k++)
                 {
@@ -88,27 +113,25 @@ void converter_update(converter model, float const u[INPUTS_NUM][1], float y[OUT
                 x_next[i][0] = result;
         }
 
-        // y = Cd * x + Dd * u
+        // Update the model's state to the new state (x_n -> x_(n+1))
+        for (size_t i = 0; i < STATES_NUM; i++)
+        {
+                (plant.x)[i][0] = x_next[i][0];
+        }
+
+        /*
+         * y_(n+1) = Cd * x_(n+1) (state and output should be at the same time index after this
+         * function returns). Here Dd is zero and it is not included in the calculations.
+         */
         for (size_t i = 0; i < OUTPUTS_NUM; i++)
         {
                 float result = 0.0f;
 
                 for (size_t j = 0; j < STATES_NUM; j++)
                 {
-                        result += Cd[i][j] * model->x[j][0];
+                        result += Cd[i][j] * (plant.x)[j][0];
                 }
-                for (size_t k = 0; k < INPUTS_NUM; k++)
-                {
-                        result += Dd[i][k] * u[k][0];
-                }
-
                 y[i][0] = result;
-        }
-
-        // Update the model's state to the new state.
-        for (size_t i = 0; i < STATES_NUM; i++)
-        {
-                (model->x)[i][0] = x_next[i][0];
         }
 }
 
@@ -121,8 +144,54 @@ void converter_set_type(converter_type_t type)
 {
         converter_type = type;
 
-        // This function also needs to change the TIM2 counter mode to up-down for inverter H-brdige
-        // converter type.
+        if (type == DC_DC_IDEAL || type == INVERTER_IDEAL)
+        {
+                /*
+                 * In ideal types, disable counter match interrupt and enable update event
+                 * interrupt. In these types, controller and converter updates happen once TIM2
+                 * update event happens.
+                 */
+                TIM2->DIER &= ~TIM_DIER_CC1IE;
+                TIM2->DIER |= TIM_DIER_UIE;
+        }
+        else if (type == DC_DC_H_BRIDGE)
+        {
+                /*
+                 * In this type, both interrupts should be enabled because when CNT = CCR, we
+                 * change the input to the plant from v_link to -v_link, and when update event
+                 * interrupt happens we change the plant input from -v_link to v_link.
+                 */
+                TIM2->DIER |= TIM_DIER_CC1IE;
+                TIM2->DIER |= TIM_DIER_UIE;
+        }
+        else
+        {
+                /*
+                 * In INVERTER_H_BRIDGE type, where timer is counting in up-down mode, we do not
+                 * care about update events. So their interrupt is turned off. The counter match
+                 * interrupt is enabled because in when CNT = CCR while upcounting, we change the
+                 * plant input from v_link to -v_link and when CNT = CCR while counting down, we
+                 * change the plant input from -v_link to v_link.
+                 */
+                TIM2->DIER |= TIM_DIER_CC1IE;
+                TIM2->DIER &= ~TIM_DIER_UIE;
+        }
+
+        // Disable TIM2 counter before changing the counting mode of the TIM2.
+        TIM2->CR1 &= ~TIM_CR1_CEN;
+
+        if (type == INVERTER_H_BRIDGE)
+        {
+                // In this mode, TIM2 counts in up-down mode.
+                TIM2->CR1 &= ~TIM_CR1_CMS;
+                TIM2->CR1 |= (TIM_CR1_CMS_0 | TIM_CR1_CMS_1);
+        }
+        else
+        {
+                // In this mode, TIM2 operates in up-count mode.
+                TIM2->CR1 &= ~TIM_CR1_CMS;
+                TIM2->CR1 &= ~(TIM_CR1_CMS | TIM_CR1_DIR);
+        }
 }
 
 converter_mode_t converter_get_mode(void)
@@ -140,26 +209,43 @@ void converter_set_mode(converter_mode_t mode)
                  */
                 NVIC_DisableIRQ(TIM2_IRQn);
 
-                // Clear PID controller integral accumulative term.
-                pid_clear_integrator(&pid);
+                // Disable TIM2 counter.
+                TIM2->CR1 &= ~TIM_CR1_CEN;
 
+                // Reset TIM2 counter register.
+                TIM2->CNT = 0U;
+
+                // Clear PID controller integral accumulative term and previous error.
+                pid_clear_integrator();
+                pid_clear_prev_error();
                 // Set plant's input and output to 0
                 u[0][0] = 0.0f;
                 y[0][0] = 0.0f;
-                // Set state vector to 0 by reseting converter state vector.
-                converter_init(&plant);
+                // Reset converter state vector.
+                converter_reset_state();
+                /*
+                Remove TASK0 from the scheduler so that we do not update the loop accidentally after
+                coming out of MOD mode.
+                */
+                atomic_fetch_and(&ready_flag_word, ~TASK0);
 
                 // Turn off TIM2 PWM so that green LED turns off.
                 pwm_tim2_set_duty(0.0f);
                 pwm_tim2_disable();
+
+                // Disable stream to make sure it is off in idle and config modes
+                cli_stream_is_on = false;
         }
         else
         {
                 /*
-                 * Start updating the control loop and converter state
+                 * In modulation mode. Start updating the control loop and converter state
                  * vector in modulation mode by enabling timer 2 interrupt.
                  */
                 NVIC_EnableIRQ(TIM2_IRQn);
+
+                // Enable TIM2 counter.
+                TIM2->CR1 |= TIM_CR1_CEN;
 
                 // Turn on TIM2 PWM so that green LED turns on.
                 pwm_tim2_enable();

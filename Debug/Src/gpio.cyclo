@@ -3,10 +3,10 @@
 ../Src/gpio.c:144:6:gpio_clear_pin	1
 ../Src/gpio.c:149:6:gpio_toggle_pin	1
 ../Src/gpio.c:154:6:gpio_read_pin_input	1
-../Src/gpio.c:160:6:gpio_button_is_pressed	2
-../Src/gpio.c:178:13:gpio_enable_port_clock	1
-../Src/gpio.c:183:13:gpio_set_pin_mode	1
-../Src/gpio.c:191:1:gpio_set_pin_alternate_function	2
-../Src/gpio.c:215:13:gpio_set_pin_ospeed	1
-../Src/gpio.c:223:13:gpio_set_pin_otype	2
-../Src/gpio.c:235:13:gpio_set_pin_pupd	1
+../Src/gpio.c:163:6:gpio_button_is_pressed	2
+../Src/gpio.c:181:13:gpio_enable_port_clock	1
+../Src/gpio.c:186:13:gpio_set_pin_mode	1
+../Src/gpio.c:194:1:gpio_set_pin_alternate_function	2
+../Src/gpio.c:218:13:gpio_set_pin_ospeed	1
+../Src/gpio.c:226:13:gpio_set_pin_otype	2
+../Src/gpio.c:238:13:gpio_set_pin_pupd	1

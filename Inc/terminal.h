@@ -3,15 +3,12 @@
 
 typedef enum
 {
-        TERM_COLOR_DEFAULT = 0,
-        TERM_COLOR_BLACK,
-        TERM_COLOR_RED,
-        TERM_COLOR_GREEN,
         TERM_COLOR_YELLOW,
         TERM_COLOR_BLUE,
         TERM_COLOR_MAGENTA,
         TERM_COLOR_CYAN,
-        TERM_COLOR_WHITE
+        TERM_COLOR_WHITE,
+        TERM_COLOR_DEFAULT,
 } terminal_color_t;
 
 void terminal_clear(void);

@@ -1,5 +1,5 @@
-../Src/terminal.c:7:6:terminal_clear	8	static
-../Src/terminal.c:12:6:terminal_insert_new_line	8	static
-../Src/terminal.c:17:6:terminal_print_arrow	8	static
-../Src/terminal.c:22:6:terminal_set_text_color	16	static
-../Src/terminal.c:57:6:terminal_reset_text_color	8	static
+../Src/terminal.c:23:6:terminal_clear	8	static
+../Src/terminal.c:29:6:terminal_insert_new_line	8	static
+../Src/terminal.c:34:6:terminal_print_arrow	8	static
+../Src/terminal.c:40:6:terminal_set_text_color	16	static
+../Src/terminal.c:64:6:terminal_reset_text_color	8	static

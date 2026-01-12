@@ -1,2 +1,2 @@
-../Src/scheduler.c:19:6:scheduler_init	4	static
-../Src/scheduler.c:28:6:scheduler_run	32	static,ignoring_inline_asm
+../Src/scheduler.c:20:6:scheduler_init	4	static
+../Src/scheduler.c:29:6:scheduler_run	32	static,ignoring_inline_asm

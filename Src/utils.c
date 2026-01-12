@@ -5,7 +5,6 @@
  *     This module:
  *     - Converts ASCII numeric strings to floating-point values
  *     - Converts strings to lowercase in-place
- *     - Implements internal helper routines for integer parsing
  *
  * Internal helpers:
  *     - str_to_uint32() converts a digit sequence to an unsigned 32-bit integer.
@@ -106,7 +105,7 @@ void str_to_lower(char *str)
         }
 }
 
-uint32_t str_to_uint32(const char *str)
+static uint32_t str_to_uint32(const char *str)
 {
         const char *p = str;
 
