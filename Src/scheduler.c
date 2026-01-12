@@ -48,7 +48,6 @@ void scheduler_run(void)
                 {
                         (*task)();
                 }
-
                 iwdg_pet_the_dog();
         }
 }

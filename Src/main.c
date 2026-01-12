@@ -1,5 +1,4 @@
-#include <stdbool.h>
-#include <stdint.h>
+#include <stddef.h>
 #include <stdio.h>
 
 #include "stm32f4xx.h"
@@ -14,7 +13,6 @@
 #include "pwm.h"
 #include "scheduler.h"
 #include "systick.h"
-#include "terminal.h"
 #include "timer.h"
 #include "uart.h"
 
@@ -34,9 +32,11 @@ int main(void)
 
         // Initialize the plant (converter) and the pid controller.
         converter_init();
-        pid_init(0.046f,      // kp
-                 7900.0f,     // ki
-                 0.000071f,   // kd
+
+        // Initialize the PID controller (Coefficients are set to 0 and should be set by the user).
+        pid_init(0.0f,        // kp
+                 0.0f,        // ki
+                 0.0f,        // kd
                  0.000020f,   // Ts
                  -50.000000f, // int_out_min (controller integral term minimum value)
                  50.000000f,  // int_out_max (controller integral term maximum value)
@@ -49,9 +49,10 @@ int main(void)
         // Initialize the CLI.
         cli_init();
 
+        // Initialize the independent watchdog.
         iwdg_init();
         /* ---------- End of initialization phase ---------- */
 
         // Background loop. Run the prioritized cooperative scheduler.
-        scheduler_run();
+        scheduler_run(); // This function never returns.
 }

@@ -1,9 +1,9 @@
 C:/Users/hgholab/OneDrive/Source Code/Embedded Systems/Modules/Final_Project/chip_headers/CMSIS/Include/core_cm4.h:1684:22:__NVIC_EnableIRQ	2
 C:/Users/hgholab/OneDrive/Source Code/Embedded Systems/Modules/Final_Project/chip_headers/CMSIS/Include/core_cm4.h:1722:22:__NVIC_DisableIRQ	2
-../Src/converter.c:82:6:converter_init	1
-../Src/converter.c:89:6:converter_reset_state	2
-../Src/converter.c:95:6:converter_update	7
-../Src/converter.c:138:18:converter_get_type	1
-../Src/converter.c:143:6:converter_set_type	5
-../Src/converter.c:197:18:converter_get_mode	1
-../Src/converter.c:202:6:converter_set_mode	3
+../Src/converter.c:80:6:converter_init	1
+../Src/converter.c:87:6:converter_reset_state	2
+../Src/converter.c:93:6:converter_update	7
+../Src/converter.c:136:18:converter_get_type	1
+../Src/converter.c:141:6:converter_set_type	1
+../Src/converter.c:146:18:converter_get_mode	1
+../Src/converter.c:151:6:converter_set_mode	3

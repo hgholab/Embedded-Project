@@ -1,4 +1,4 @@
-../Src/systick.c:44:6:SysTick_Handler	4	static
-../Src/systick.c:59:6:systick_init	4	static
-../Src/systick.c:83:10:systick_get_ticks	4	static
-../Src/systick.c:88:6:systick_print_output	24	static
+../Src/systick.c:41:6:SysTick_Handler	4	static
+../Src/systick.c:56:6:systick_init	4	static
+../Src/systick.c:80:10:systick_get_ticks	4	static
+../Src/systick.c:85:6:systick_print_output	24	static

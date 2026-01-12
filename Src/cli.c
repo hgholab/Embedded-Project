@@ -79,6 +79,7 @@ static int cli_set_ki_handler(command_t command);
 static int cli_set_kd_handler(command_t command);
 static int cli_set_ref_handler(command_t command);
 static int cli_exit_command_handler(command_t command);
+static int cli_clear_command_handler(command_t command);
 static command_t cli_tokenize_command(uint8_t *cmd_str);
 static void cli_show_startup_menu(void);
 static void cli_show_system_status(converter_mode_t mode,
@@ -99,7 +100,8 @@ static const cli_command_t cli_command_table[] = {{"help", cli_show_help_and_not
                                                   {"ki", cli_set_ki_handler, false},
                                                   {"kd", cli_set_kd_handler, false},
                                                   {"ref", cli_set_ref_handler, false},
-                                                  {"exit", cli_exit_command_handler, true}};
+                                                  {"exit", cli_exit_command_handler, true},
+                                                  {"clear", cli_clear_command_handler, true}};
 
 void cli_init(void)
 {
@@ -465,8 +467,7 @@ static int cli_set_type_handler(command_t command)
         }
         else
         {
-                if (strcmp("0", command.argv[1]) == 0 || strcmp("1", command.argv[1]) == 0 ||
-                    strcmp("2", command.argv[1]) == 0 || strcmp("3", command.argv[1]) == 0)
+                if (strcmp("0", command.argv[1]) == 0 || strcmp("1", command.argv[1]) == 0)
                 {
                         int type_id = (int)str_to_float(command.argv[1]);
                         if (converter_get_type() != type_id)
@@ -579,6 +580,7 @@ static int cli_set_ref_handler(command_t command)
                                "%05.2f.",
                                REF_MAX,
                                REF_MAX);
+                        terminal_insert_new_line();
                 }
                 else if (ref < -1.0f * REF_MAX)
                 {
@@ -586,6 +588,7 @@ static int cli_set_ref_handler(command_t command)
                                "%05.2f.",
                                -1.0f * REF_MAX,
                                -1.0f * REF_MAX);
+                        terminal_insert_new_line();
                 }
 
                 // The reference value is then limited between -REF_MAX and REF_MAX.
@@ -625,6 +628,13 @@ static int cli_exit_command_handler(command_t command)
                 terminal_print_arrow();
                 return -1;
         }
+}
+
+static int cli_clear_command_handler(command_t command)
+{
+        terminal_clear();
+        terminal_print_arrow();
+        return 0;
 }
 
 /* ==================== CLI Printing Functions ==================== */
@@ -720,9 +730,9 @@ static void cli_show_config_menu(void)
         printf("  ref <value>           - Set reference value");
         terminal_insert_new_line();
         terminal_insert_new_line();
-        printf("  Note: ref refers to the output desired DC value for DC-DC types, ");
+        printf("  Note: ref refers to the output desired DC value for DC-DC type,");
         terminal_insert_new_line();
-        printf("  and output desired sinusoidal amplitude for inverter types.");
+        printf("  and output desired sinusoidal amplitude for inverter type.");
         terminal_insert_new_line();
 }
 
@@ -742,10 +752,6 @@ static void cli_show_help_and_notes(void)
         terminal_insert_new_line();
         printf("                          1: Inverter Ideal Bridge");
         terminal_insert_new_line();
-        printf("                          2: DC-DC H-Bridge, and");
-        terminal_insert_new_line();
-        printf("                          3: Inverter H-Bridge");
-        terminal_insert_new_line();
         printf("  mode idle             - Switch to idle mode");
         terminal_insert_new_line();
         printf("  mode config           - Enter config mode (tune type, kp, ki, kd, and ref)");
@@ -763,6 +769,8 @@ static void cli_show_help_and_notes(void)
         printf("  stream                - Periodically print output voltage");
         terminal_insert_new_line();
         printf("  exit                  - Leave config mode");
+        terminal_insert_new_line();
+        printf("  clear                 - Clear terminal screen");
         terminal_insert_new_line();
         terminal_insert_new_line();
         printf("  Notes");

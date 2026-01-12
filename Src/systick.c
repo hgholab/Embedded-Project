@@ -2,11 +2,12 @@
  * systick.c
  *
  * Description:
- *     Configures and manages the Cortex-M4 SysTick timer.
+ *     Configures and manages the SysTick timer.
+ *
  *     This file provides:
  *     - Initialization of SysTick
  *     - A 1 ms system tick interrupt
- *     - An increasing tick counter
+ *     - An increasing tick counter with frequency of 1 kHz
  */
 #include <math.h>
 #include <stdatomic.h>
@@ -22,7 +23,6 @@
 #include "converter.h"
 #include "scheduler.h"
 #include "terminal.h"
-#include "timer.h"
 
 // SysTick frequency in Hz
 #define SYSTICK_FREQUENCY 1000UL
@@ -34,12 +34,9 @@ uint16_t systick_print_counter = 0U;
 static volatile uint32_t systick_ticks = 0UL;
 
 /*
- * SysTick interrupt is used to print the output voltage of the converter when stream is on.
- *
- * Note: SysTick interrupt priority is the lowest on Nucleo F411RE by default. That is what
- * we want because printing the output voltage value is not as important as mode change by
- * button handled by TIM3 or updating the control loop and the converter state vector by
- * TIM2.
+ * SysTick interrupt is used to print the output voltage of the converter when stream is on. Also it
+ * keeps a tick that is used for locking UART from changing the mode for 5000ms after the mode was
+ * changed by button.
  */
 void SysTick_Handler(void)
 {
@@ -58,7 +55,7 @@ void SysTick_Handler(void)
 
 void systick_init(void)
 {
-        // Disable SysTick timer.
+        // Disable SysTick timer before configuration.
         SysTick->CTRL &= ~SysTick_CTRL_ENABLE_Msk;
 
         // Enable SysTick interrupt.
@@ -92,7 +89,7 @@ void systick_print_output(void)
                 converter_type_t converter_type = converter_get_type();
 
                 printf("  Output Voltage: %6.2f V, ", y[0][0]);
-                if (converter_type == DC_DC_IDEAL || converter_type == DC_DC_H_BRIDGE)
+                if (converter_type == DC_DC_IDEAL)
                 {
                         printf("Reference Voltage: %6.2f V", pid_get_ref());
                 }

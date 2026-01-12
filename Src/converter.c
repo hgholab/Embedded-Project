@@ -37,19 +37,17 @@ struct converter_model
 };
 
 // Phase change for reference in one time-step.
-float converter_ref_dphi  = 2.0f * PI * SINE_FREQUENCY * (1.0f / SAMPLING_FREQUENCY);
-float converter_ref_phase = 0.0f; // Reference phase at each instant.
+const float converter_ref_dphi = 2.0f * PI * SINE_FREQUENCY * (1.0f / SAMPLING_FREQUENCY);
+float converter_ref_phase      = 0.0f; // Reference phase at each instant.
 
-const char *const modes[MODES_NUM] = {"idle", "config", "mod"};
-const char *const types[TYPES_NUM] = {
-        "DC-DC ideal bridge", "inverter ideal bridge", "DC-DC H-bridge", "inverter H-bridge"};
-const char *const types_id[TYPES_NUM] = {"0", "1", "2", "3"};
-// The value for converter DC link is chosen arbitrarily
-const float converter_dc_link_voltage = 50.0f;
-// Initialize plant input voltage marked U_in in assignment description.
-float u[INPUTS_NUM][1]                = {{0.0f}};
-// Initialize plant output voltage marked U_3 in assignment description.
-float y[OUTPUTS_NUM][1]               = {{0.0f}};
+const char *const modes[MODES_NUM]    = {"idle", "config", "mod"};
+const char *const types[TYPES_NUM]    = {"DC-DC ideal bridge", "inverter ideal bridge"};
+const char *const types_id[TYPES_NUM] = {"0", "1"};
+
+// Define and initialize plant input voltage marked U_in in assignment description.
+float u[INPUTS_NUM][1]  = {{0.0f}};
+// Define and initialize plant output voltage marked U_3 in assignment description.
+float y[OUTPUTS_NUM][1] = {{0.0f}};
 
 static struct converter_model plant;
 static converter_type_t converter_type = DC_DC_IDEAL;
@@ -143,55 +141,6 @@ converter_type_t converter_get_type(void)
 void converter_set_type(converter_type_t type)
 {
         converter_type = type;
-
-        if (type == DC_DC_IDEAL || type == INVERTER_IDEAL)
-        {
-                /*
-                 * In ideal types, disable counter match interrupt and enable update event
-                 * interrupt. In these types, controller and converter updates happen once TIM2
-                 * update event happens.
-                 */
-                TIM2->DIER &= ~TIM_DIER_CC1IE;
-                TIM2->DIER |= TIM_DIER_UIE;
-        }
-        else if (type == DC_DC_H_BRIDGE)
-        {
-                /*
-                 * In this type, both interrupts should be enabled because when CNT = CCR, we
-                 * change the input to the plant from v_link to -v_link, and when update event
-                 * interrupt happens we change the plant input from -v_link to v_link.
-                 */
-                TIM2->DIER |= TIM_DIER_CC1IE;
-                TIM2->DIER |= TIM_DIER_UIE;
-        }
-        else
-        {
-                /*
-                 * In INVERTER_H_BRIDGE type, where timer is counting in up-down mode, we do not
-                 * care about update events. So their interrupt is turned off. The counter match
-                 * interrupt is enabled because in when CNT = CCR while upcounting, we change the
-                 * plant input from v_link to -v_link and when CNT = CCR while counting down, we
-                 * change the plant input from -v_link to v_link.
-                 */
-                TIM2->DIER |= TIM_DIER_CC1IE;
-                TIM2->DIER &= ~TIM_DIER_UIE;
-        }
-
-        // Disable TIM2 counter before changing the counting mode of the TIM2.
-        TIM2->CR1 &= ~TIM_CR1_CEN;
-
-        if (type == INVERTER_H_BRIDGE)
-        {
-                // In this mode, TIM2 counts in up-down mode.
-                TIM2->CR1 &= ~TIM_CR1_CMS;
-                TIM2->CR1 |= (TIM_CR1_CMS_0 | TIM_CR1_CMS_1);
-        }
-        else
-        {
-                // In this mode, TIM2 operates in up-count mode.
-                TIM2->CR1 &= ~TIM_CR1_CMS;
-                TIM2->CR1 &= ~(TIM_CR1_CMS | TIM_CR1_DIR);
-        }
 }
 
 converter_mode_t converter_get_mode(void)
@@ -218,11 +167,14 @@ void converter_set_mode(converter_mode_t mode)
                 // Clear PID controller integral accumulative term and previous error.
                 pid_clear_integrator();
                 pid_clear_prev_error();
-                // Set plant's input and output to 0
+
+                // Set plant's input and output to 0.
                 u[0][0] = 0.0f;
                 y[0][0] = 0.0f;
+
                 // Reset converter state vector.
                 converter_reset_state();
+
                 /*
                 Remove TASK0 from the scheduler so that we do not update the loop accidentally after
                 coming out of MOD mode.

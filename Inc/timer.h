@@ -13,7 +13,7 @@
  * chosen to be 50 Hz so that a valid press button signal should last for at least 20 ms.
  */
 #define TIM2_FREQUENCY 200UL
-#define TIM3_FREQUENCY 50UL // TIM3 update event frequency
+#define TIM3_FREQUENCY 50UL
 
 void tim3_init(uint32_t timer_freq);
 void tim2_init(uint32_t timer_freq);

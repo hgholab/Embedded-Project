@@ -5,7 +5,7 @@
 #define INPUTS_NUM  1
 #define OUTPUTS_NUM 1
 #define MODES_NUM   3
-#define TYPES_NUM   4
+#define TYPES_NUM   2
 
 typedef enum
 {
@@ -17,17 +17,14 @@ typedef enum
 typedef enum
 {
         DC_DC_IDEAL,
-        INVERTER_IDEAL,
-        DC_DC_H_BRIDGE,
-        INVERTER_H_BRIDGE
+        INVERTER_IDEAL
 } converter_type_t;
 
-extern float converter_ref_dphi;
+extern const float converter_ref_dphi;
 extern float converter_ref_phase;
 extern const char *const modes[];
 extern const char *const types[];
 extern const char *const types_id[];
-extern const float converter_dc_link_voltage;
 extern float u[][1];
 extern float y[][1];
 

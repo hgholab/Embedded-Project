@@ -1,7 +1,6 @@
 #include <math.h>
 #include <stdatomic.h>
 #include <stdbool.h>
-#include <stdio.h>
 
 #include "stm32f4xx.h"
 
@@ -14,37 +13,16 @@
 #include "gpio.h"
 #include "pwm.h"
 #include "scheduler.h"
-#include "systick.h"
-#include "terminal.h"
 #include "utils.h"
 
-#define TIM2_CLK 100000UL // TIM2 clock frequency
-#define TIM3_CLK 10000UL  // TIM3 clock frequency
-
-float timer_sine_ref = 0.0f;
-
-static bool tim2_update_event_is_pending = false;
-static bool tim2_ccr_event_is_pending    = false;
-static bool tim2_dir = false; // false means upcounting and true means downcounting
+#define TIM2_CLK 10000UL // TIM2 clock frequency
+#define TIM3_CLK 10000UL // TIM3 clock frequency
 
 // TIM2 update event interrupt is used for updating the control loop and providing PWM for the LED.
 void TIM2_IRQHandler(void)
 {
-        if (TIM2->SR & TIM_SR_UIF) // An update event interrupt has happend.
-        {
-                // Clear UIF flag.
-                TIM2->SR &= ~TIM_SR_UIF;
-
-                // Set the update event flag.
-                tim2_update_event_is_pending = true;
-        }
-
-        if (TIM2->SR & TIM_SR_CC1IF) // An interrupt has happened becasue CCR = CNT.
-        {
-                TIM2->SR &= ~TIM_SR_CC1IF;
-
-                tim2_ccr_event_is_pending = true;
-        }
+        // Clear UIF flag.
+        TIM2->SR &= ~TIM_SR_UIF;
 
         // Atomic modification of ready_flag_word to prevent race conditions.
         atomic_fetch_or(&ready_flag_word, TASK0);
@@ -68,10 +46,10 @@ void tim2_init(uint32_t timer_freq)
         /*
          * PCLK1 = HCLK / 2 = 50 MHz (max allowed on STM32F411).
          * APB1 timer clock = 100 MHz (because APB1 prescaler = 2).
-         * We want for timer 2 to run at frequency of TIM2_CLK = 100 kHz.
+         * We want for timer 2 to run at frequency of TIM2_CLK = 10 kHz.
          */
 
-        // Calculate the value of prescaler so timer 2 runs at 100 kHz.
+        // Calculate the value of prescaler so timer 2 runs at 10 kHz.
         uint32_t prescaler            = (APB1_TIM_CLK / TIM2_CLK) - 1UL;
         // Auto-reload register value.
         uint32_t auto_reload_register = (TIM2_CLK / timer_freq) - 1UL;
@@ -80,11 +58,14 @@ void tim2_init(uint32_t timer_freq)
         TIM2->PSC = prescaler;
         TIM2->ARR = auto_reload_register;
 
-        // Set up-counting, edge-aligned mode
+        // Set up-counting, edge-aligned mode.
         TIM2->CR1 &= ~(TIM_CR1_CMS | TIM_CR1_DIR);
 
         // Enable ARR preload (prescaler (PSC) is always buffered).
         TIM2->CR1 |= TIM_CR1_ARPE;
+
+        // Enable update event interrupt.
+        TIM2->DIER |= TIM_DIER_UIE;
 
         // Generate an update first to load preloaded value.
         TIM2->EGR |= TIM_EGR_UG;
@@ -97,9 +78,6 @@ void tim2_init(uint32_t timer_freq)
         // Set priority and disable TIM2 interrupt in NVIC for now.
         NVIC_SetPriority(TIM2_IRQn, 0);
         NVIC_DisableIRQ(TIM2_IRQn);
-
-        // Enable TIM2 counter.
-        TIM2->CR1 |= TIM_CR1_CEN;
 }
 
 void tim3_init(uint32_t timer_freq)
@@ -112,11 +90,11 @@ void tim3_init(uint32_t timer_freq)
          * APB1 timer clock = 100 MHz (because APB1 prescaler = 2).
          * We want for timer 3 to run at frequency of TIM3_CLK = 10 kHz.
          */
-        uint32_t tim3_clock           = TIM3_CLK;
+
         // Calculate the value of prescaler so timer 3 runs at 10 kHz.
-        uint32_t prescaler            = (APB1_TIM_CLK / tim3_clock) - 1UL;
+        uint32_t prescaler            = (APB1_TIM_CLK / TIM3_CLK) - 1UL;
         // Auto-reload register value.
-        uint32_t auto_reload_register = (tim3_clock / timer_freq) - 1UL;
+        uint32_t auto_reload_register = (TIM3_CLK / timer_freq) - 1UL;
 
         // Set prescaler and auto-reload.
         TIM3->PSC = prescaler;
@@ -125,11 +103,11 @@ void tim3_init(uint32_t timer_freq)
         // Enable ARR preload (prescaler (PSC) is always buffered).
         TIM3->CR1 |= TIM_CR1_ARPE;
 
-        // Generate an update first to load preloaded value.
-        TIM3->EGR |= TIM_EGR_UG;
-
         // Enable update event interrupt.
         TIM3->DIER |= TIM_DIER_UIE;
+
+        // Generate an update first to load preloaded value.
+        TIM3->EGR |= TIM_EGR_UG;
 
         // Clear pending flags.
         TIM3->SR = 0;
@@ -157,19 +135,17 @@ void tim2_update_loop(void)
         // LED PWM duty cycle.
         float duty;
 
-        switch (converter_type)
+        if (converter_type == DC_DC_IDEAL)
         {
-        case DC_DC_IDEAL:
                 /*
-                 * Based on the assignment instruction, in the basic version, the converter model
-                 * (plant) takes a reference directly from the controller output. The only
-                 * difference between DC_DC_IDEAL and INVERTER_IDEAL converter types is that to get
-                 * the desired output values for each type, the user should configure the controller
-                 * appropriately for each type. The converter has been descritized with sampling
-                 * time of 1/(50000 Hz) = 20 us. In order to be able to watch the changes, we should
-                 * execute each update, including controller and converter update, in a slower rate.
-                 * This slower rate here is TIM2 frequency (updates happen at TIM2 update event
-                 * instant). TIM2 in this type, INVERTER_IDEAL, and DC_DC_H_BRIDGE is up-counting.
+                 * Based on the assignment instruction, in the basic version (ideal H-bridge), the
+                 * converter model (plant) takes a reference directly from the controller output.
+                 * The only difference between DC_DC_IDEAL and INVERTER_IDEAL converter types is
+                 * that to get the desired output values for each type, the user should configure
+                 * the controller appropriately for each type. The converter has been descritized
+                 * with sampling time of 1/(50000 Hz) = 20 us. In order to be able to watch the
+                 * changes, we should execute each update, including controller and converter
+                 * update, in a slower rate. This slower rate here is TIM2 frequency.
                  */
 
                 // Update the pid control which makes the input for the plant.
@@ -181,14 +157,13 @@ void tim2_update_loop(void)
                 /*
                  * The duty cycle for LED PWM in this type is calculated by normalizing the pid
                  * output (or plant input). Normalization is done with respect to the maximum value
-                 * for the reference.
+                 * for the reference (REF_MAX) which is 50.
                  */
                 duty = 100.0f * CLAMP((u[0][0] / REF_MAX), 0.0f, 1.0f);
-
-                break;
-
-        case INVERTER_IDEAL:
-
+        }
+        else
+        {
+                // Calculate the reference voltage phase at this update instance.
                 converter_ref_phase += converter_ref_dphi;
 
                 if (converter_ref_phase >= 2.0f * PI)
@@ -196,12 +171,8 @@ void tim2_update_loop(void)
                         converter_ref_phase -= 2.0f * PI;
                 }
 
+                // Real reference value in this type is amplitude * sin(converter_ref_phase).
                 ref = ref * sinf(converter_ref_phase);
-
-                /*
-                 * Here, we generate a sinusoidal reference, so that we can subtract the output
-                 * voltage (measurement) from it
-                 */
 
                 u[0][0] = pid_update(ref, measurement);
 
@@ -211,115 +182,13 @@ void tim2_update_loop(void)
                 /*
                  * The duty cycle for LED PWM in this type is the same as DC_DC_IDEAL type.
                  * ABS_FLOAT function-like macro is used here to turn negative values of voltage
-                 * into positive values.
+                 * into positive values. So the brightness of LED is highest when the output voltage
+                 * is at either peak and LED is almost off when the output voltage is passing 0 V.
                  */
                 duty = 100.0f * CLAMP(ABS_FLOAT(u[0][0] / REF_MAX), 0.0f, 1.0f);
-
-                break;
-
-        case DC_DC_H_BRIDGE:
-                if (tim2_update_event_is_pending)
-                {
-                        /*
-                         * Update event interrupt (end of the switching period). If we show the DC
-                         * link voltage as v_link, here bridge output voltage goes from -v_link to
-                         * v_link.
-                         */
-
-                        // Clear the pending update event flag.
-                        tim2_update_event_is_pending = false;
-
-                        uint32_t arr = TIM2->ARR;
-                        TIM2->CCR1 =
-                                (uint32_t)(CLAMP(pid_update(ref, measurement), 0.0f, (float)arr));
-                        uint32_t ccr = TIM2->CCR1;
-
-                        duty    = (100.0f * ccr) / (arr + 1);
-                        u[0][0] = converter_dc_link_voltage;
-                        converter_update(u, y);
-                }
-                else if (tim2_ccr_event_is_pending)
-                {
-                        /*
-                         * Counter match interrupt (somewhere in the middle of the switching
-                         * period). Here bridge output voltage goes from v_link to -v_link.
-                         */
-
-                        // Clear the counter match event flag.
-                        tim2_ccr_event_is_pending = false;
-
-                        u[0][0] = -1.0f * converter_dc_link_voltage;
-                        converter_update(u, y);
-                }
-
-                break;
-
-        case INVERTER_H_BRIDGE:
-                if (tim2_update_event_is_pending)
-                {
-                        /*
-                         * Update event interrupt (end of the switching period). If we show the DC
-                         * link voltage as v_link, here bridge output voltage goes from -v_link to
-                         * v_link.
-                         */
-
-                        // Clear the pending update event flag.
-                        tim2_update_event_is_pending = false;
-
-                        // Does this cause distortion? if yes should I handle this in CLAMP below?
-                        // ref = ref * (0.5f + 0.5f * sine_lut_value(sine_lut_get_ref_index()));
-                        // sine_lut_increment_ref_index();
-
-                        uint32_t arr = TIM2->ARR;
-                        TIM2->CCR1 =
-                                (uint32_t)(CLAMP(pid_update(ref, measurement), 0.0f, (float)arr));
-                        uint32_t ccr = TIM2->CCR1;
-
-                        duty    = (100.0f * ccr) / (arr);
-                        u[0][0] = converter_dc_link_voltage;
-                        converter_update(u, y);
-                }
-                else if (tim2_ccr_event_is_pending && !(TIM2->CR1 & TIM_CR1_DIR))
-                {
-                        /*
-                         * Counter match interrupt while counting up. Here bridge output voltage
-                         * goes from v_link to -v_link.
-                         */
-
-                        // Clear the counter match event flag.
-                        tim2_ccr_event_is_pending = false;
-
-                        u[0][0] = -1.0f * converter_dc_link_voltage;
-                        converter_update(u, y);
-                }
-                else if (tim2_ccr_event_is_pending && (TIM2->CR1 & TIM_CR1_DIR))
-                {
-                        /*
-                         * Counter match interrupt while counting down. Here bridge output voltage
-                         * goes from -v_link to v_link.
-                         */
-
-                        // Clear the counter match event flag.
-                        tim2_ccr_event_is_pending = false;
-
-                        u[0][0] = converter_dc_link_voltage;
-                        converter_update(u, y);
-                }
-
-                break;
         }
 
-        /*
-         * Next, we change the brightness of the green LED.
-         * In the ideal H-bridge where PWM signal is directly fed into the converter model, we
-         * normalize the absolute value of this voltage by REF_MAX which is chosen to be 50. In the
-         * bonus task, where we simulate a H-bridge, the story is a bit different. In the DC-DC
-         * version, controller output is compared to a repeating sequence (TIM2 up-counter here) and
-         * generates the PWM for the LED. In the inverter version of H-bridge, we have chosen to
-         * implement the bipolar modulation of a full-bridge single-phase inverter, and controller
-         * output is comapared to a traingular carrier (TIM2 up-down counter here) which generates
-         * the PWM. The following function call sets the duty for TIM2 CH1 PWM.
-         */
+        // Next, we change the brightness of the green LED.
         pwm_tim2_set_duty(duty);
 }
 

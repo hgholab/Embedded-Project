@@ -1,4 +1,4 @@
-../Src/systick.c:44:6:SysTick_Handler	2
-../Src/systick.c:59:6:systick_init	1
-../Src/systick.c:83:10:systick_get_ticks	1
-../Src/systick.c:88:6:systick_print_output	5
+../Src/systick.c:41:6:SysTick_Handler	2
+../Src/systick.c:56:6:systick_init	1
+../Src/systick.c:80:10:systick_get_ticks	1
+../Src/systick.c:85:6:systick_print_output	4

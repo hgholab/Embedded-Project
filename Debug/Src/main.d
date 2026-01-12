@@ -9,8 +9,7 @@ Src/main.o: ../Src/main.c \
  C:/Users/hgholab/OneDrive/Source\ Code/Embedded\ Systems/Modules/Final_Project/chip_headers/CMSIS/Device/ST/STM32F4xx/Include/system_stm32f4xx.h \
  ../Inc/cli.h ../Inc/converter.h ../Inc/clock.h ../Inc/controller.h \
  ../Inc/converter.h ../Inc/fpu.h ../Inc/gpio.h ../Inc/iwdg.h ../Inc/pwm.h \
- ../Inc/scheduler.h ../Inc/systick.h ../Inc/terminal.h ../Inc/timer.h \
- ../Inc/uart.h
+ ../Inc/scheduler.h ../Inc/systick.h ../Inc/timer.h ../Inc/uart.h
 C:/Users/hgholab/OneDrive/Source\ Code/Embedded\ Systems/Modules/Final_Project/chip_headers/CMSIS/Device/ST/STM32F4xx/Include/stm32f4xx.h:
 C:/Users/hgholab/OneDrive/Source\ Code/Embedded\ Systems/Modules/Final_Project/chip_headers/CMSIS/Device/ST/STM32F4xx/Include/stm32f411xe.h:
 C:/Users/hgholab/OneDrive/Source\ Code/Embedded\ Systems/Modules/Final_Project/chip_headers/CMSIS/Include/core_cm4.h:
@@ -30,6 +29,5 @@ C:/Users/hgholab/OneDrive/Source\ Code/Embedded\ Systems/Modules/Final_Project/c
 ../Inc/pwm.h:
 ../Inc/scheduler.h:
 ../Inc/systick.h:
-../Inc/terminal.h:
 ../Inc/timer.h:
 ../Inc/uart.h:
