@@ -18,7 +18,7 @@
  *         PCLK2  = 100 MHz
  */
 
-#include <stddef.h> // stddef.h is used to access size_t type definition
+#include <stddef.h> // stddef.h is used to access size_t type definition.
 #include <stdint.h>
 
 #include "stm32f4xx.h"

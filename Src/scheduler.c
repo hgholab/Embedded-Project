@@ -19,6 +19,7 @@ static task_handler task_arr[TASKS_NUM];
 
 void scheduler_init(void)
 {
+        // Tasks ordered based on their priority (index 0 has the highest priority).
         task_arr[0] = tim2_update_loop;
         task_arr[1] = cli_process_rx_byte;
         task_arr[2] = tim3_read_button;

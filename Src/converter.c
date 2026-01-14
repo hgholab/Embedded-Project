@@ -176,9 +176,9 @@ void converter_set_mode(converter_mode_t mode)
                 converter_reset_state();
 
                 /*
-                Remove TASK0 from the scheduler so that we do not update the loop accidentally after
-                coming out of MOD mode.
-                */
+                 * Remove TASK0 from the scheduler so that we do not update the loop accidentally
+                 * after coming out of MOD mode.
+                 */
                 atomic_fetch_and(&ready_flag_word, ~TASK0);
 
                 // Turn off TIM2 PWM so that green LED turns off.

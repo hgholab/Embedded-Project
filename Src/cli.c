@@ -447,7 +447,7 @@ static int cli_uart_set_mode_handler(command_t command)
         }
         else
         {
-                printf("The mode was not found! Still in %s mode. Try again.",
+                printf("  The mode was not found! Still in %s mode. Try again.",
                        modes[converter_get_mode()]);
                 terminal_insert_new_line();
                 terminal_print_arrow();
@@ -616,10 +616,21 @@ static int cli_exit_command_handler(command_t command)
 
         if (converter_get_mode() == CONFIG)
         {
-                command_t dummy_command = {.argc = 2, .argv = {"mode", "idle"}};
-                cli_uart_set_mode_handler(dummy_command);
-                cli_config_is_entered_via_uart = false;
-                return 0;
+                if (systick_get_ticks() < cli_uart_block_until_ms)
+                {
+                        printf("  UART cannot change the mode right now! Try again in a few "
+                               "seconds.");
+                        terminal_insert_new_line();
+                        terminal_print_arrow();
+                        return -1;
+                }
+                else
+                {
+                        command_t dummy_command = {.argc = 2, .argv = {"mode", "idle"}};
+                        cli_uart_set_mode_handler(dummy_command);
+                        cli_config_is_entered_via_uart = false;
+                        return 0;
+                }
         }
         else
         {

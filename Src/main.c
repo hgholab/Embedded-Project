@@ -1,8 +1,6 @@
 #include <stddef.h>
 #include <stdio.h>
 
-#include "stm32f4xx.h"
-
 #include "cli.h"
 #include "clock.h"
 #include "controller.h"
@@ -30,7 +28,7 @@ int main(void)
         uart2_init();
         scheduler_init();
 
-        // Initialize the plant (converter) and the pid controller.
+        // Initialize the plant (converter).
         converter_init();
 
         // Initialize the PID controller (Coefficients are set to 0 and should be set by the user).
